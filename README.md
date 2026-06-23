@@ -28,7 +28,8 @@ That means a review skill must:
 
 | Skill | Purpose |
 |-------|---------|
-| [`terraform-review`](skills/terraform-review/SKILL.md) | Flags Terraform/OpenTofu diff issues: identity churn (missing `moved` blocks, `count` index churn), secrets that land in state, unsafe destroy/state ops, version-floor violations, backend antipatterns. |
+| [`terraform-review`](skills/terraform-review/SKILL.md) | Flags Terraform/OpenTofu diff issues: identity churn (missing `moved` blocks, `count` index churn), secrets that land in state, unsafe destroy/state ops, version-floor violations, backend antipatterns. Adapted from [antonbabenko/terraform-skill](https://github.com/antonbabenko/terraform-skill) (Apache-2.0). |
+| [`apex-review`](skills/apex-review/SKILL.md) | Flags Salesforce Apex/SOQL diff issues: governor-limit killers (SOQL/DML in loops), missing CRUD/FLS & sharing enforcement, SOQL injection, hardcoded IDs, trigger anti-patterns. Rules derived from the [PMD Apex ruleset](https://github.com/pmd/pmd) (BSD-2). For *writing* SF code, see Salesforce's official [sf-skills](https://github.com/forcedotcom/sf-skills). |
 
 ## Usage
 
