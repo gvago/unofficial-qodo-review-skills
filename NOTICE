@@ -1,0 +1,13 @@
+Unofficial Qodo Review Skills
+Copyright 2026 gvago and contributors
+
+This product includes software derived from terraform-skill
+(https://github.com/antonbabenko/terraform-skill), Copyright 2026 Anton Babenko,
+licensed under the Apache License, Version 2.0.
+
+The skill at skills/terraform-review/ is a PR-review adaptation of that work. The
+reference files under skills/terraform-review/references/ are reproduced from the
+original project under the Apache License, Version 2.0.
+
+This project is unofficial and is not affiliated with or endorsed by Qodo or
+Anton Babenko.
