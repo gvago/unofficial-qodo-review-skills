@@ -9,5 +9,12 @@ The skill at skills/terraform-review/ is a PR-review adaptation of that work. Th
 reference files under skills/terraform-review/references/ are reproduced from the
 original project under the Apache License, Version 2.0.
 
-This project is unofficial and is not affiliated with or endorsed by Qodo or
-Anton Babenko.
+The skill suite at skills/linux-kernel-review/ and skills/kernel-*/ is derived from
+Sashiko (https://github.com/sashiko-dev/sashiko), Copyright the Sashiko contributors /
+The Linux Foundation, licensed under the Apache License, Version 2.0. Reference files
+under skills/kernel-*/references/ are reproduced from masoncl/review-prompts
+(https://github.com/masoncl/review-prompts), Copyright Chris Mason, licensed under the
+MIT License (see THIRD_PARTY_LICENSE-masoncl-review-prompts).
+
+This project is unofficial and is not affiliated with or endorsed by Qodo,
+Anton Babenko, Chris Mason, Sashiko, or The Linux Foundation.

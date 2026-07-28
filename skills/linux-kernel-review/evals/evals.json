@@ -1,0 +1,17 @@
+{
+  "skill_name": "linux-kernel-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this driver patch as a kernel maintainer and report findings.",
+      "expected_output": "Three action_required findings on demo_probe/demo_remove: (A) kernel-execution-flow F2 — kzalloc return of dd not checked before spin_lock_init dereferences it; (B) kernel-resource-lifecycle L1 — dd leaked on the stats -ENOMEM error path; (C) kernel-resource-lifecycle L4 / kernel-locking-concurrency C4 — demo_remove frees stats and dd without cancel_work_sync(&dd->refresh_work), so the scheduled work can run after free (UAF). Pass only if A, B, and C all appear with function-level citations, and no style/naming/defensive-programming findings are raised.",
+      "files": ["exercise/pr/demo_driver.c"]
+    },
+    {
+      "id": 2,
+      "prompt": "Does this version pass kernel review?",
+      "expected_output": "Zero findings. Pass only if the skill set stays quiet on the corrected code (the spin_lock in demo_remove before cancel_work_sync is correct: ready flag flip is protected, cancel happens outside the lock).",
+      "files": ["exercise/fixed/demo_driver.c"]
+    }
+  ]
+}

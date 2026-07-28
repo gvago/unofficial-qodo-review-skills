@@ -6,6 +6,11 @@ emits review findings driven by their rules.
 
 > **Unofficial.** Not affiliated with or endorsed by Qodo. These are community adaptations.
 
+These skills are **starting points**, adapted from existing open-source projects or built
+for customer initiatives. Tune the rules to your codebase and conventions before relying on
+them; any performance figures published by the upstream projects describe those projects,
+not these adaptations.
+
 ## How Qodo's skills agent uses these
 
 When enabled, the review pipeline scans these directories at a repo root:
@@ -30,6 +35,34 @@ That means a review skill must:
 |-------|---------|
 | [`terraform-review`](skills/terraform-review/SKILL.md) | Flags Terraform/OpenTofu diff issues: identity churn (missing `moved` blocks, `count` index churn), secrets that land in state, unsafe destroy/state ops, version-floor violations, backend antipatterns. Adapted from [antonbabenko/terraform-skill](https://github.com/antonbabenko/terraform-skill) (Apache-2.0). |
 | [`apex-review`](skills/apex-review/SKILL.md) | Flags Salesforce Apex/SOQL diff issues: governor-limit killers (SOQL/DML in loops), missing CRUD/FLS & sharing enforcement, SOQL injection, hardcoded IDs, trigger anti-patterns. Rules derived from the [PMD Apex ruleset](https://github.com/pmd/pmd) (BSD-2). For *writing* SF code, see Salesforce's official [sf-skills](https://github.com/forcedotcom/sf-skills). |
+| [`linux-kernel-review`](skills/linux-kernel-review/SKILL.md) *(suite)* | Linux kernel patch review: one orchestrator plus eight lens skills covering change intent, execution flow, resource lifecycle, locking/concurrency, security, driver/hardware, per-subsystem invariants, and a false-positive/severity gate. Adapted from [Sashiko](https://github.com/sashiko-dev/sashiko)'s review protocol (Apache-2.0) and [masoncl/review-prompts](https://github.com/masoncl/review-prompts) (MIT). See below. |
+
+### The `linux-kernel-review` suite
+
+Nine skills that work together. The orchestrator routes a kernel diff through the lenses;
+`kernel-review-discipline` is always applied last as the false-positive gate.
+
+| Skill | Sashiko stage | Lens |
+|-------|---------------|------|
+| [`linux-kernel-review`](skills/linux-kernel-review/SKILL.md) | orchestration | Router + shared low-noise contract |
+| [`kernel-change-intent`](skills/kernel-change-intent/SKILL.md) | 1–2 | Design soundness, UAPI breakage, commit-message-vs-code |
+| [`kernel-execution-flow`](skills/kernel-execution-flow/SKILL.md) | 3 | Control flow, error paths, NULL, uninitialized values |
+| [`kernel-resource-lifecycle`](skills/kernel-resource-lifecycle/SKILL.md) | 4 | Leaks, UAF, refcounts, async teardown symmetry |
+| [`kernel-locking-concurrency`](skills/kernel-locking-concurrency/SKILL.md) | 5 | Races, deadlocks, RCU, barriers (findings must name both racing contexts) |
+| [`kernel-security-audit`](skills/kernel-security-audit/SKILL.md) | 6 | OOB, integer overflow, TOCTOU, info leaks, privesc |
+| [`kernel-driver-hardware`](skills/kernel-driver-hardware/SKILL.md) | 7 | Registers, DMA, barriers, IRQ, device state machines |
+| [`kernel-subsystem-guides`](skills/kernel-subsystem-guides/SKILL.md) | shared context | Trigger table → 67 per-subsystem invariant guides ([masoncl/review-prompts](https://github.com/masoncl/review-prompts), MIT) |
+| [`kernel-review-discipline`](skills/kernel-review-discipline/SKILL.md) | 9–10 | False-positive gate + severity calibration — **always applied last** |
+
+Sashiko's stages 8 and 11 (dedup, LKML report rendering) are pipeline mechanics that the
+Qodo platform performs natively, so only their reasoning rules were kept. Kernel severity
+maps to the Qodo contract as Critical/High → `action_required`, Medium →
+`remediation_recommended`, Low → `informational`.
+
+For the full kernel suite, copy **all nine** `linux-kernel-review`/`kernel-*` folders — the
+orchestrator and discipline gate assume the lenses are present. Eval fixtures (a buggy vs
+fixed demo driver with expected findings) live in
+[`skills/linux-kernel-review/evals/`](skills/linux-kernel-review/evals/).
 
 ## Usage
 
@@ -50,6 +83,15 @@ cp -R /tmp/uqrs/skills/terraform-review skills/terraform-review
 **Anton Babenko** (Apache-2.0). The original is a *coding* skill; this variant flips the
 contract and rule framing toward *reviewing a diff*. Reference files under
 `skills/terraform-review/references/` are reproduced from the source under the same license.
+
+The `linux-kernel-review` suite adapts the review protocol of
+[**Sashiko**](https://github.com/sashiko-dev/sashiko) (Linux Foundation, Apache-2.0) —
+its 11 reviewer-persona stages repackaged as diff-review skills. The subsystem guides and
+discipline references are reproduced from
+[**masoncl/review-prompts**](https://github.com/masoncl/review-prompts) by
+**Chris Mason** (MIT, see [THIRD_PARTY_LICENSE-masoncl-review-prompts](THIRD_PARTY_LICENSE-masoncl-review-prompts)).
+Sashiko's Rust infrastructure (lore/NNTP ingestion, worktrees, webhooks, UI) was deliberately
+not converted — the Qodo platform provides ingestion, consolidation, and rendering.
 
 ## License
 
