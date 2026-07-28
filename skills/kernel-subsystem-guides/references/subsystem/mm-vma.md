@@ -94,7 +94,7 @@ The VMA-modifying paths -- `__split_vma()`, `commit_merge()`, and
 
 ## Per-VMA Lock Exclusion via vma_start_write()
 
-`mmap_write_lock()` alone does NOT exclude per-VMA lock holders — per-VMA
+`mmap_write_lock()` alone does NOT exclude per-VMA lock holders, per-VMA
 read locks acquired **before** `mmap_write_lock()` remain held, because the
 seqcount in `vma_start_read()` only prevents **new** acquisitions, not
 revocation of existing ones. Only `vma_start_write(vma)` drains existing
@@ -109,11 +109,11 @@ functions walk page tables (`mm_find_pmd` → PGD→P4D→PUD→PMD) and then
 read the PMD value via `pmdp_get_lockless(pmd)` in `check_pmd_state()`.
 A concurrent per-VMA locked `MADV_DONTNEED` can call `try_to_free_pte()`
 → `pmd_clear()` + `free_pte()` between the PMD read and subsequent use
-of the result — the check succeeds, the caller proceeds assuming a valid
+of the result, the check succeeds, the caller proceeds assuming a valid
 PMD, but the PMD has been cleared and the PTE page freed underneath it.
 Code that calls these functions before `vma_start_write()` and then acts
 on the result (e.g., proceeding to `pmd_lock` + `pmdp_collapse_flush` on
-the assumption the PMD is still populated) is a bug — even though the
+the assumption the PMD is still populated) is a bug, even though the
 PMD *pointer* remains valid (it's in the PUD page which isn't freed),
 the *value* and the PTE page it pointed to are gone.
 
@@ -173,7 +173,7 @@ swapped by a callback -- the replacement gets a leaked extra reference. See
   `vma_interval_tree_foreach()` or `vma_address()`
 - **VMA merge/modify error handling**: `vma_modify()`/`vma_merge_new_range()` may
   return error or a different VMA. Original VMA may be freed on success.
-  On failure, `vmg->start/end/pgoff` may be mutated and not restored —
+  On failure, `vmg->start/end/pgoff` may be mutated and not restored , 
   save originals or check `vmg_nomem()`. See `madvise_walk_vmas()` in
   `mm/madvise.c`
 - **VMA flag ordering vs merging**: flags not in `VM_IGNORE_MERGE` must be
@@ -191,7 +191,7 @@ swapped by a callback -- the replacement gets a leaked extra reference. See
   source-vs-destination semantics
 - **VM_ACCOUNT preservation during VMA manipulation**: clearing `VM_ACCOUNT`
   on a surviving VMA (e.g., `MREMAP_DONTUNMAP`, partial unmap) leaks
-  committed memory permanently — `do_vmi_munmap()` only uncharges VMAs
+  committed memory permanently, `do_vmi_munmap()` only uncharges VMAs
   with `VM_ACCOUNT`. Review `vm_flags_clear()` calls including `VM_ACCOUNT`
 - **VMA iteration on external mm_struct**: call
   `check_stable_address_space(mm)` after mmap lock, before traversal.

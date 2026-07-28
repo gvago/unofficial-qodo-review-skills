@@ -110,7 +110,7 @@ resource "aws_db_instance" "this" {
 
 <a id="secret-string-state-caveat"></a>
 
-> **Note — data source `secret_string` persists to state:** The `aws_secretsmanager_secret_version` data source reads `secret_string` into Terraform state during refresh. `password_wo` (AWS provider v5.71+, Terraform 1.11+) keeps the **resource argument** out of state, but the data source still persists the value. For true state exclusion:
+> **Note, data source `secret_string` persists to state:** The `aws_secretsmanager_secret_version` data source reads `secret_string` into Terraform state during refresh. `password_wo` (AWS provider v5.71+, Terraform 1.11+) keeps the **resource argument** out of state, but the data source still persists the value. For true state exclusion:
 >
 > - Prefer `manage_master_user_password = true` (AWS-managed, for RDS)
 > - Use `ephemeral` providers/resources (Terraform 1.10+)
@@ -251,7 +251,7 @@ resource "aws_vpc_security_group_ingress_rule" "web_https" {
   ip_protocol       = "tcp"
 }
 
-# Scope egress to needed ports when possible — avoid 0.0.0.0/0 with ip_protocol = "-1"
+# Scope egress to needed ports when possible, avoid 0.0.0.0/0 with ip_protocol = "-1"
 resource "aws_vpc_security_group_egress_rule" "web_https_out" {
   security_group_id = aws_security_group.web.id
   description       = "HTTPS to external services"
@@ -357,7 +357,7 @@ deny[msg] {
 
 ### AWS Secrets Manager Pattern
 
-See the [data-source `secret_string` persistence caveat](#secret-string-state-caveat) above — both `random_password.result` and data-source reads of `secret_string` land in Terraform state. The recommended RDS pattern avoids both.
+See the [data-source `secret_string` persistence caveat](#secret-string-state-caveat) above, both `random_password.result` and data-source reads of `secret_string` land in Terraform state. The recommended RDS pattern avoids both.
 
 ```hcl
 # Recommended: let RDS generate and manage the master password in Secrets Manager
@@ -391,7 +391,7 @@ resource "aws_secretsmanager_secret" "app_api_key" {
 }
 
 # secret_string populated out-of-band (console, CLI, or a write-only argument on
-# providers that support it) — not via random_password stored in state.
+# providers that support it), not via random_password stored in state.
 ```
 
 ### Environment Variables
@@ -449,7 +449,7 @@ resource "aws_s3_bucket_versioning" "terraform_state" {
   }
 }
 
-# Enable encryption — customer-managed KMS CMK with bucket key to control request costs
+# Enable encryption, customer-managed KMS CMK with bucket key to control request costs
 resource "aws_kms_key" "terraform_state" {
   description             = "KMS CMK for Terraform state bucket"
   enable_key_rotation     = true
@@ -469,7 +469,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" 
 }
 
 # Note: for regulated workloads (HIPAA/PCI/FedRAMP), customer-managed KMS with
-# rotation enabled is typically required — SSE-S3 (AES256) is usually insufficient.
+# rotation enabled is typically required, SSE-S3 (AES256) is usually insufficient.
 
 # Block public access
 resource "aws_s3_bucket_public_access_block" "terraform_state" {
@@ -530,9 +530,9 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
 }
 ```
 
-- `s3:ListBucket` must target the bucket ARN; object actions must target `/*` — splitting avoids IAM silently no-op'ing the mismatched pairings.
+- `s3:ListBucket` must target the bucket ARN; object actions must target `/*`, splitting avoids IAM silently no-op'ing the mismatched pairings.
 - `s3:DeleteObject` + `s3:GetObjectVersion` are required to rotate state objects when versioning is enabled.
-- The `Deny` statement enforces TLS — any HTTP request is rejected regardless of other grants.
+- The `Deny` statement enforces TLS, any HTTP request is rejected regardless of other grants.
 
 ---
 
@@ -620,15 +620,15 @@ resource "aws_iam_policy" "bad_policy" {
 
 ---
 
-## LLM Mistake Checklist — Security & Compliance
+## LLM Mistake Checklist, Security & Compliance
 
 Common model mistakes to correct before returning security/compliance recommendations:
 
-- assumes `sensitive = true` keeps the value out of state — it only masks display; use `write_only` / `*_wo` arguments on 1.11+ or an external secret lookup
+- assumes `sensitive = true` keeps the value out of state, it only masks display; use `write_only` / `*_wo` arguments on 1.11+ or an external secret lookup
 - proposes plaintext defaults in `variable` blocks or committed `.tfvars` "for demo convenience"
 - echoes secrets through `provisioner` commands or `local-exec` stdout into CI logs (see [Provisioners as Last Resort](code-patterns.md#provisioners-as-last-resort) for the broader pattern)
 - emits outputs that expose full connection strings or credentials (even when marked `sensitive`)
-- mentions a compliance framework (SOC 2, PCI, HIPAA, GDPR, FedRAMP) but provides no enforceable gate — no policy stage, no approval model, no evidence artifact
+- mentions a compliance framework (SOC 2, PCI, HIPAA, GDPR, FedRAMP) but provides no enforceable gate, no policy stage, no approval model, no evidence artifact
 - confuses security best practices with compliance evidence (an encrypted bucket is not the same as a retained audit artifact proving it)
 - omits artifact retention and access controls for plan JSON exports
 - ignores data-residency obligations for GDPR/FedRAMP contexts

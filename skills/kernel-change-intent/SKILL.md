@@ -1,6 +1,6 @@
 ---
 name: kernel-change-intent
-description: "Use when reviewing a Linux kernel PR diff \u2014 verifies commit goal and implementation claims (Sashiko stages 1-2): design soundness, UAPI/ABI breakage, and commit-message-vs-code mismatches in the CHANGED code only. Part of the linux-kernel-review suite."
+description: "Use when reviewing a Linux kernel PR diff, verifies commit goal and implementation claims (Sashiko stages 1-2): design soundness, UAPI/ABI breakage, and commit-message-vs-code mismatches in the CHANGED code only. Part of the linux-kernel-review suite."
 license: Apache-2.0
 metadata:
   author: Sashiko contributors / Chris Mason
@@ -54,7 +54,7 @@ whether the code actually does what the commit message claims.
 
 ## What NOT to flag
 
-- Low-level memory or locking errors — other lenses own those.
+- Low-level memory or locking errors, other lenses own those.
 - Stylistic disagreement with a design that violates no kernel principle.
 - Commit message wording nits with no code impact.
 

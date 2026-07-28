@@ -1,6 +1,6 @@
 ---
 name: linux-kernel-review
-description: "Use when a PR diff modifies Linux kernel code (C or Rust in a kernel tree: drivers/, fs/, mm/, net/, kernel/, block/, include/linux/, arch/) \u2014 orchestrator for the kernel review suite: routes the diff through the kernel-* lenses, enforces the shared low-noise contract (prove it against the code, diff-scope only, few high-value findings). Skip for non-kernel diffs."
+description: "Use when a PR diff modifies Linux kernel code (C or Rust in a kernel tree: drivers/, fs/, mm/, net/, kernel/, block/, include/linux/, arch/), orchestrator for the kernel review suite: routes the diff through the kernel-* lenses, enforces the shared low-noise contract (prove it against the code, diff-scope only, few high-value findings). Skip for non-kernel diffs."
 license: Apache-2.0
 metadata:
   author: Sashiko contributors / Chris Mason
@@ -39,7 +39,7 @@ Apply every lens whose scope the diff touches. A patch can match several.
 | kernel-security-audit | 6 | OOB, integer overflow, TOCTOU, info leaks |
 | kernel-driver-hardware | 7 | Registers, DMA, barriers, IRQ, suspend/resume |
 | kernel-subsystem-guides | context | Per-subsystem invariants, loaded by trigger table |
-| kernel-review-discipline | 9-10 | False-positive gate, severity, specificity — ALWAYS |
+| kernel-review-discipline | 9-10 | False-positive gate, severity, specificity, ALWAYS |
 
 Sashiko stages 8 (dedup), 9 (conflict resolution), and 11 (report format)
 are pipeline mechanics; the Qodo platform consolidates and renders findings.

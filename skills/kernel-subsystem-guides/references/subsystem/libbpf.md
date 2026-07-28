@@ -3,9 +3,9 @@
 ## errno Convention
 
 Public libbpf API functions (marked with `LIBBPF_API` in `tools/lib/bpf/`
-headers — `libbpf.h`, `bpf.h`, `btf.h`, `libbpf_legacy.h`) must set `errno` on all
+headers, `libbpf.h`, `bpf.h`, `btf.h`, `libbpf_legacy.h`) must set `errno` on all
 error paths. Userspace callers rely on `errno` being set when a function
-returns an error — returning a negative value or NULL without setting errno
+returns an error, returning a negative value or NULL without setting errno
 silently breaks error handling.
 
 Three wrapper functions in `tools/lib/bpf/libbpf_internal.h` enforce this:
@@ -20,9 +20,9 @@ Three wrapper functions in `tools/lib/bpf/libbpf_internal.h` enforce this:
 
 ## Which Functions Need Wrappers
 
-- Public APIs (`LIBBPF_API` or listed in `libbpf.map`) — all error returns
+- Public APIs (`LIBBPF_API` or listed in `libbpf.map`), all error returns
   must use the wrappers
-- Internal/static functions — do NOT use the wrappers (they use kernel-style
+- Internal/static functions, do NOT use the wrappers (they use kernel-style
   negative error codes or `ERR_PTR` internally)
 
 The wrapper must be on the `return` statement itself, not applied earlier in
@@ -68,11 +68,11 @@ error return path uses the appropriate wrapper. Common mistakes:
 - `return -EINVAL;` instead of `return libbpf_err(-EINVAL);`
 - `return NULL;` instead of `return libbpf_err_ptr(-ESOMETHING);`
 - `return ERR_PTR(-EINVAL);` instead of `return libbpf_err_ptr(-EINVAL);`
-  (public APIs must never return `ERR_PTR` — callers check for `NULL`)
+  (public APIs must never return `ERR_PTR`, callers check for `NULL`)
 - Wrapping the error value earlier in the function but then returning a
   different error code unwrapped on a later path
 
-Internal/static functions should NOT use these wrappers — only the public
+Internal/static functions should NOT use these wrappers, only the public
 API boundary needs them.
 
 **REPORT as bugs**: Public libbpf API functions that return error values

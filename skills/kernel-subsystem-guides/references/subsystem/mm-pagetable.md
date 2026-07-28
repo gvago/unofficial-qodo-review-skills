@@ -309,7 +309,7 @@ NULL; call `folio_get()` before releasing PTL if returning a folio reference.
   `zap_pte_range()` in `mm/memory.c`
 - **VM_WRITE gate for writable PTEs**: writable PTEs require `VM_WRITE` in
   `vma->vm_flags`. Use `maybe_mkwrite()` (`include/linux/mm.h`). Verify in
-  fork/COW, userfaultfd install, and any PTE construction path — VMA
+  fork/COW, userfaultfd install, and any PTE construction path, VMA
   permissions can change via `mprotect()` between mapping and installation
 - **VMA flag and PTE/PMD flag consistency**: clearing a `vm_flags` bit
   (e.g., `VM_UFFD_WP`, `VM_SOFT_DIRTY`) requires clearing the corresponding
@@ -317,7 +317,7 @@ NULL; call `folio_get()` before releasing PTL if returning a folio reference.
   when VMA flag clearing and page table walk are in different code paths.
   See `clear_uffd_wp_pmd()` in `mm/huge_memory.c`
 - **`flush_tlb_batched_pending()` after PTL re-acquisition**: after dropping
-  and re-acquiring PTL, call `flush_tlb_batched_pending(mm)` — reclaim on
+  and re-acquiring PTL, call `flush_tlb_batched_pending(mm)`, reclaim on
   another CPU may have batched TLB flushes while the lock was released.
   See `flush_tlb_batched_pending()` in `mm/rmap.c`
 - **Page table removal vs GUP-fast**: clearing a PUD/PMD to free a page
@@ -336,10 +336,10 @@ NULL; call `folio_get()` before releasing PTL if returning a folio reference.
   `try_to_free_pte()` (in `mm/pt_reclaim.c`) → `pmd_clear()`. When all
   PTEs in a page table are zapped, PT_RECLAIM frees the PTE page **and
   clears the PMD entry**. Code that read the PMD before
-  `vma_start_write()` now holds a stale pointer to freed memory — this is
+  `vma_start_write()` now holds a stale pointer to freed memory, this is
   use-after-free (kernel panic), not just stale data. Do NOT dismiss
   PMD-level accesses before `vma_start_write()` as "different granularity"
-  from PTE-level zap operations — the zap path modifies PMDs too
+  from PTE-level zap operations, the zap path modifies PMDs too
 - **Page fault path lock constraints**: `->fault`/`->page_mkwrite` run
   under `mmap_lock`, nested below `i_rwsem` and `sb_start_write`. Fault
   handlers must not wait on freeze protection (ABBA deadlock). Copy user
@@ -369,8 +369,8 @@ NULL; call `folio_get()` before releasing PTL if returning a folio reference.
   `pgd_populate_kernel()` / `p4d_populate_kernel()` which call
   `arch_sync_kernel_mappings()`. Affects vmemmap, percpu, KASAN shadow
 - **Lazy MMU mode pairing and hazards**: (1) PTE reads after writes inside
-  lazy mode may return stale data — bracket with leave/enter. (2) Error
-  paths must not skip `arch_leave_lazy_mmu_mode()` — use `break` not
+  lazy mode may return stale data, bracket with leave/enter. (2) Error
+  paths must not skip `arch_leave_lazy_mmu_mode()`, use `break` not
   `return`. No-op on most configs; bugs only manifest on Xen PV, sparc,
   powerpc book3s64, arm64
 - **Lazy MMU mode implies possible atomic context**: disables preemption
@@ -379,7 +379,7 @@ NULL; call `folio_get()` before releasing PTL if returning a folio reference.
   `GFP_ATOMIC`/`GFP_NOWAIT` or pre-allocation. Invisible on x86/arm64
 - **Non-present PTE swap entry type dispatch**: see the full section in
   PTE State Consistency above. Verify each dispatch branch accepts only
-  semantically matching entry types — do not group device-exclusive with
+  semantically matching entry types, do not group device-exclusive with
   migration despite both having PFNs
 - **`arch_sync_kernel_mappings()` on error paths**: loops that accumulate
   `pgtbl_mod_mask` and call `arch_sync_kernel_mappings()` after must use
@@ -433,7 +433,7 @@ NULL; call `folio_get()` before releasing PTL if returning a folio reference.
   return from `walk_page_range()` may mean "skipped", not "handled"
 - **`ACTION_AGAIN` in page walk callbacks**: `ACTION_AGAIN` retries with
   no limit. `pte_offset_map_lock()` returns NULL non-transiently for
-  migration entries — setting `ACTION_AGAIN` on this failure creates an
+  migration entries, setting `ACTION_AGAIN` on this failure creates an
   infinite loop. Return 0 to skip gracefully. `walk_pte_range()` already
   handles retry internally; callbacks should not duplicate it
 - **Page comparison for zeropage remapping must use `pages_identical()`**:

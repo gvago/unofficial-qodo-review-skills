@@ -1,6 +1,6 @@
 ---
 name: terraform-review
-description: Use when a PR diff adds or modifies Terraform/OpenTofu (.tf / .tofu / .tftest.hcl) — flags identity churn (missing `moved` blocks, `count` index churn), secrets that land in state, unsafe destroy/state ops, version-floor violations, and backend/state antipatterns in the CHANGED HCL only. Skip for non-IaC diffs.
+description: Use when a PR diff adds or modifies Terraform/OpenTofu (.tf / .tofu / .tftest.hcl), flags identity churn (missing `moved` blocks, `count` index churn), secrets that land in state, unsafe destroy/state ops, version-floor violations, and backend/state antipatterns in the CHANGED HCL only. Skip for non-IaC diffs.
 license: Apache-2.0
 metadata:
   author: Anton Babenko
@@ -13,7 +13,7 @@ metadata:
 # Terraform Review Skill
 
 Review lens for Terraform/OpenTofu changes in a pull request. Every rule below is a
-**concrete violation you can point at in the diff** — not a generation workflow.
+**concrete violation you can point at in the diff**, not a generation workflow.
 
 This is the review-oriented adaptation of Anton Babenko's `terraform-skill` (a coding
 skill). The diagnostic categories and the version-floor knowledge are his; the contract,
@@ -30,7 +30,7 @@ You are reviewing a **unified diff**, not a live workspace. Therefore:
 - **Findings apply to the diff, not the repo.** Only flag HCL that was *added or modified*
   in this PR. Unchanged surrounding code is out of scope.
 - **Every finding must trace to a rule below.** If you cannot point to a specific rule in
-  this file that the changed HCL violates, drop it — the generic "issues" agent handles
+  this file that the changed HCL violates, drop it, the generic "issues" agent handles
   ordinary bugs. This skill only fires on the Terraform-specific rules enumerated here.
 - **Determine the runtime floor from the diff when possible.** Read `required_version` in
   `versions.tf` / `terraform {}` blocks if the PR touches them; otherwise treat the floor
@@ -43,9 +43,9 @@ When you emit a finding, set the fields the review pipeline expects:
 
 | This skill's severity | `action_level` | `category` (typical) |
 |-----------------------|----------------|----------------------|
-| **Blocking** — clear, harmful, will break or leak | `action_required` | `Security` or `Correctness` |
-| **Recommended** — likely wrong but context-dependent | `remediation_recommended` | `Correctness` / `Maintainability` |
-| **Optional** — maintainability nudge | `informational` | `Maintainability` |
+| **Blocking**, clear, harmful, will break or leak | `action_required` | `Security` or `Correctness` |
+| **Recommended**, likely wrong but context-dependent | `remediation_recommended` | `Correctness` / `Maintainability` |
+| **Optional**, maintainability nudge | `informational` | `Maintainability` |
 
 Each finding's `evidence.citations` MUST include a `SkillCitation` with
 `source = "terraform-review"`. Put the offending span in `diff_pointer`. Give a concrete
@@ -65,7 +65,7 @@ severity → why → fix.**
   destroy + recreate. Fix: add a `moved { from = ... to = ... }` block in the same PR; a
   rename should plan as a move, not a replacement.
 - **`for_each` keys built from values not known until apply** (e.g. keyed off a computed
-  resource ID/ARN). → **Blocking** (Correctness). Planning fails — keys must be known at
+  resource ID/ARN). → **Blocking** (Correctness). Planning fails, keys must be known at
   plan time. Fix: key off input variables or business-meaningful static values.
 - **`count` introduced for a collection where elements may be reordered/removed**, or
   `count.index` used as long-lived identity. → **Recommended** (Correctness). Removing a
@@ -79,7 +79,7 @@ severity → why → fix.**
 - **`terraform state mv` suggested in scripts/docs** where a declarative `moved` block
   would be reviewable. → **Recommended** (Maintainability). Fix: prefer `moved` blocks.
 
-### 2. Secret exposure (the big one — state is not safe just because it's masked)
+### 2. Secret exposure (the big one, state is not safe just because it's masked)
 
 - **`sensitive = true` added to a variable/output and treated as keeping the value out of
   state.** → **Blocking** (Security). `sensitive` only masks *display*; the value still
@@ -107,7 +107,7 @@ severity → why → fix.**
 
 - **`-auto-approve` on a destroy**, or a targeted `destroy` in scripts/CI with no
   `plan -destroy` shown first. → **Blocking** (Correctness). Locals referencing a targeted
-  resource pull all its `for_each` consumers in as implicit dependents — destroy deletes
+  resource pull all its `for_each` consumers in as implicit dependents, destroy deletes
   more than expected. Fix: require a reviewed `plan -destroy` artifact + explicit approval;
   never `-auto-approve` a destroy.
 - **Production apply that re-runs `plan` inside the apply job** instead of applying the
@@ -150,7 +150,7 @@ minimum (or the floor is unknown and the feature is recent), flag it.** Severity
 | `moved` blocks | 1.1+ | omitted during rename → destroy/create |
 | `optional()` with defaults | 1.3+ | wrapper variables / loose `map(any)` contracts instead |
 | declarative `import` blocks | 1.5+ | ad-hoc CLI `terraform import` in automation instead |
-| `check` blocks | 1.5+ | `check` used expecting it to **gate** apply — it is advisory (warnings only). Use `precondition`/`postcondition` to block. |
+| `check` blocks | 1.5+ | `check` used expecting it to **gate** apply, it is advisory (warnings only). Use `precondition`/`postcondition` to block. |
 | native `terraform test` | 1.6+ | mocked-provider tests treated as full integration coverage |
 | mock providers | 1.7+ | asserting **computed** values in `command = plan` mode (needs `apply`) |
 | `removed` blocks | 1.7+ | deleting resources with no lifecycle transition |
@@ -169,7 +169,7 @@ pre-floor fallback explicitly.
 
 - **Exact provider/runtime pin `version = "5.0.0"`** where `~> 5.0` is more maintainable
   (non-prod contexts). → **Optional** (Maintainability). (Exact pins are correct for prod
-  module consumption — judge by context.)
+  module consumption, judge by context.)
 - **Untyped `map(any)` / `any` for a long-lived module input** instead of `optional()` with
   typed defaults (1.3+). → **Recommended** (Maintainability). Fix: type the contract.
 - **Variable block missing `description` or explicit `type`**, output missing
@@ -195,25 +195,25 @@ pre-floor fallback explicitly.
 
 ## What NOT to flag
 
-- Generic bugs, logic errors, or non-Terraform issues — those belong to the issues agent.
+- Generic bugs, logic errors, or non-Terraform issues, those belong to the issues agent.
 - HCL style/formatting unless a rule above names it.
 - Anything in files not changed by this PR.
 - Anything requiring execution to confirm (you have no workspace).
 - A feature-floor "violation" when the PR does not touch `required_version` **and** the
-  feature is old enough to be universally available — don't speculate about an unknown floor
+  feature is old enough to be universally available, don't speculate about an unknown floor
   for, say, `try()`.
 
 ## Depth references (optional, read on demand)
 
 These are the source skill's depth docs, carried over for examples and rationale. Read one
 only when a rule above fires and you want the worked detail. They are written in a
-generation voice — translate to review as above.
+generation voice, translate to review as above.
 
-- `references/code-patterns.md` — `count`/`for_each` deep dive, `moved` patterns, the full
+- `references/code-patterns.md`, `count`/`for_each` deep dive, `moved` patterns, the full
   Feature Guard Table, version management, provisioners-as-last-resort.
-- `references/security-compliance.md` — secrets handling, `write_only`/`ephemeral`,
+- `references/security-compliance.md`, secrets handling, `write_only`/`ephemeral`,
   trivy/checkov, compliance mappings.
-- `references/state-management.md` — backends, locking, safe-destroy protocol, migration,
+- `references/state-management.md`, backends, locking, safe-destroy protocol, migration,
   multi-team isolation, recovery.
 
 ## License & attribution

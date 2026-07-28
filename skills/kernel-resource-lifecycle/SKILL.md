@@ -1,6 +1,6 @@
 ---
 name: kernel-resource-lifecycle
-description: "Use when a Linux kernel PR diff allocates, frees, or hands off objects \u2014 tracks lifetimes (Sashiko stage 4): memory leaks on error paths, use-after-free, refcount imbalance, and asymmetric async teardown (missing cancel_work_sync and friends) in the CHANGED code only. Part of the linux-kernel-review suite."
+description: "Use when a Linux kernel PR diff allocates, frees, or hands off objects, tracks lifetimes (Sashiko stage 4): memory leaks on error paths, use-after-free, refcount imbalance, and asymmetric async teardown (missing cancel_work_sync and friends) in the CHANGED code only. Part of the linux-kernel-review suite."
 license: Apache-2.0
 metadata:
   author: Sashiko contributors / Chris Mason
@@ -20,7 +20,7 @@ diff from alloc to free.
 
 - Track the lifetime of every allocated object and file descriptor:
   alloc -> init -> use -> cleanup -> free. Flag any unbalanced pair.
-- Pay special attention to error paths — that is where leaks live.
+- Pay special attention to error paths, that is where leaks live.
 - For every object handed to a background task or registered with a core
   subsystem, demand teardown symmetry proof.
 
@@ -47,7 +47,7 @@ diff from alloc to free.
 - category: Correctness (Security when the UAF is reachable from
   untrusted input).
 - evidence: the allocation site, the handoff or failure path, and the
-  missing release/cancel — all by function and line.
+  missing release/cancel, all by function and line.
 
 ## What NOT to flag
 
@@ -55,7 +55,7 @@ diff from alloc to free.
   can crash the system.
 - Teardown-path release calls whose returns are ignored (teardown must
   proceed regardless).
-- Cleanup-attribute code (__free, guard()) that is actually balanced —
+- Cleanup-attribute code (__free, guard()) that is actually balanced , 
   check kernel-subsystem-guides cleanup.md triggers before flagging.
 
 ## Sourcing

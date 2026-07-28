@@ -13,7 +13,7 @@ Internally these set `MSG_ZEROCOPY` via `io_send_zc_prep()`.
 
 **Buffer import attachment**: `io_import_reg_buf()` and
 `io_import_reg_vec()` call `io_find_buf_node()`, which attaches `buf_node`
-to the passed `io_kiocb` — first arg to `io_import_reg_buf()`, third arg
+to the passed `io_kiocb`, first arg to `io_import_reg_buf()`, third arg
 to `io_import_reg_vec()`.
 
 ```c
@@ -75,7 +75,7 @@ double-free.
 - Use `io_req_async_data_clear(req, extra_flags)` for cache-returned data
 - Never manually assign `req->async_data` without setting the flag, or
   `kfree()` it without using the helpers
-- Allocate in `prep`, not `issue` — the data must exist before retry or
+- Allocate in `prep`, not `issue`, the data must exist before retry or
   cancellation. See `io_waitid_prep()` in `io_uring/waitid.c`.
 
 All helpers are in `io_uring/io_uring.h`.
@@ -200,7 +200,7 @@ corruption or out-of-bounds access.
   `data.first_folio_page_idx << PAGE_SHIFT` accounts for the first page's
   position within its folio. See `io_sqe_buffer_register()` in
   `io_uring/rsrc.c`.
-- Use `unpin_user_folio()`, never `unpin_user_page()` — registered buffers
+- Use `unpin_user_folio()`, never `unpin_user_page()`, registered buffers
   are pinned per-folio after coalescing, so unpin must match.
   See `io_release_ubuf()`.
 
@@ -217,7 +217,7 @@ See `io_uring/msg_ring.c`.
 **Rules**:
 - Free via `kfree_rcu(req, rcu_head)`, never `kmem_cache_free()` / `kfree()`
 - Never place into `io_alloc_cache` (bypasses RCU guarantees)
-- Set `req->tctx = NULL` on remote requests — the submitter may exit.
+- Set `req->tctx = NULL` on remote requests, the submitter may exit.
   See `io_msg_remote_post()`.
 
 **REPORT as bugs**: msg_ring request in `io_alloc_cache`, freed without
@@ -225,7 +225,7 @@ See `io_uring/msg_ring.c`.
 
 ## SQPOLL Thread Safety
 
-Bare `sqd->thread` access causes use-after-free — the `task_struct` is
+Bare `sqd->thread` access causes use-after-free, the `task_struct` is
 freed via RCU after thread exit. `sqd->thread` is `__rcu`-annotated
 (`io_uring/sqpoll.h`).
 
@@ -277,7 +277,7 @@ setting it makes the request invisible to polling, causing a hang.
 ## Timeout Cancellation and Lock Ordering
 
 Queuing task_work while holding `ctx->timeout_lock` (raw spinlock) causes
-lock ordering violations — completion may call `io_eventfd_signal()` which
+lock ordering violations, completion may call `io_eventfd_signal()` which
 takes a regular spinlock, invalid on PREEMPT_RT.
 
 **Two-phase pattern**:
@@ -328,12 +328,12 @@ See `io_uring/timeout.c`.
 - **SQE flag hierarchy**: Gate `READ_ONCE(sqe->field)` on the broadest flag
   covering all variants. See `io_nop_prep()` in `io_uring/nop.c`.
 - **SQE fields read before use**: `READ_ONCE()` SQE field into request
-  before using it — `req->buf_index` may hold stale data from reuse. See
+  before using it, `req->buf_index` may hold stale data from reuse. See
   `io_uring_cmd_prep()` in `io_uring/uring_cmd.c`.
 - **RESIZE_RINGS and DEFER_TASKRUN**: `io_register_resize_rings()` requires
   `IORING_SETUP_DEFER_TASKRUN`. New ring-geometry mutations need the same
   mutual exclusion. See `io_uring/register.c`.
 - **Poll event scope**: Generic poll code (`io_uring/poll.c`) must not
-  interpret event bits as errors — `POLLERR` signals data availability for
+  interpret event bits as errors, `POLLERR` signals data availability for
   some sockets (e.g., `MSG_ERRQUEUE`). Operation-specific interpretation
   belongs in issue handlers.

@@ -5,7 +5,7 @@ directory. Use it when writing new guides or restructuring existing ones.
 
 ## Purpose
 
-Each subsystem guide is a **knowledge reference** — it contains invariants,
+Each subsystem guide is a **knowledge reference**, it contains invariants,
 API contracts, struct field semantics, and common bug patterns for a specific
 kernel subsystem. It is loaded during review when the patch touches that
 subsystem (see `subsystem.md` for the trigger table).
@@ -93,14 +93,14 @@ API details using:
 
 - **Code examples** when the correct vs incorrect pattern is non-obvious or
   when the bug is a subtle ordering issue. Use `// CORRECT` and `// WRONG`
-  comments. Only include examples where they genuinely clarify — not every
+  comments. Only include examples where they genuinely clarify, not every
   section needs one.
 
 - **ASCII diagrams** only when they clarify a spatial or temporal relationship
   that prose cannot convey efficiently (e.g., btrfs extent map layout with
   compressed vs uncompressed). Do not use diagrams for simple linear sequences.
 
-- **Kernel source references** — include function names and file paths where
+- **Kernel source references**, include function names and file paths where
   the rule is enforced or can be verified: `see foo_bar() in path/to/file.c`.
   These let reviewers verify claims against the source.
   - **NEVER USE LINE NUMBERS:** these change over time and are not a useful way to
@@ -114,7 +114,7 @@ API details using:
 When a section covers a pattern where code commonly gets it wrong, explain
 **why** the mistake is hard to catch. For example, btrfs extent map fields
 are often confused because for uncompressed extents without partial references,
-all three size fields are equal — the wrong field gives the right answer.
+all three size fields are equal, the wrong field gives the right answer.
 
 Use **`REPORT as bugs`** (bold) to flag specific high-signal patterns that
 should always be reported when found:
@@ -136,19 +136,19 @@ additional items that don't warrant their own section.
 
 ## What NOT to Include
 
-- **Risk / When to check / Details boilerplate** — the old pattern format
+- **Risk / When to check / Details boilerplate**, the old pattern format
   (`**Risk**: Use-after-free`, `**Details**: Check X`). The consequence
   paragraph replaces Risk, and the section content replaces Details.
 
-- **TodoWrite workflow steps** — analysis procedures belong in agent prompts
+- **TodoWrite workflow steps**, analysis procedures belong in agent prompts
   (e.g., `../agent/review.md`, `../callstack.md`), not in subsystem
   knowledge files.
 
-- **Generic kernel knowledge** — topics like "don't sleep in atomic context"
+- **Generic kernel knowledge**, topics like "don't sleep in atomic context"
   or "check return values" belong in `../technical-patterns.md`, not in every
   subsystem guide.
 
-- **Single-commit fixes** — knowledge that only applies to one specific bug
+- **Single-commit fixes**, knowledge that only applies to one specific bug
   fix does not belong here. Each section should describe a **reusable
   invariant, API contract, or bug pattern** that applies across multiple
   call sites or future patches. Ask: "would this help review a *different*
@@ -156,14 +156,14 @@ additional items that don't warrant their own section.
   Examples of what to avoid:
   - A guard condition in one specific function that prevents a bad state
     (e.g., "function X returns early when counter is zero to avoid calling
-    function Y") — this is a description of one fix, not a reusable rule.
-  - Hardware register names and bit definitions for a single driver chip —
+    function Y"), this is a description of one fix, not a reusable rule.
+  - Hardware register names and bit definitions for a single driver chip , 
     unless the pattern generalizes across a driver family.
   - Struct field layout details for one specific structure with no broader
-    lesson — instead, extract the general principle (e.g., "UAPI structs
+    lesson, instead, extract the general principle (e.g., "UAPI structs
     that embed other structs inherit their alignment").
 
-- **Vendor-specific driver details** — register names, shadow register
+- **Vendor-specific driver details**, register names, shadow register
   numbers, and chip-specific initialization sequences belong in driver
   comments or vendor documentation, not in a subsystem-wide guide. If there
   is a general principle (e.g., "PHY config_init must handle all interface
@@ -178,7 +178,7 @@ additional items that don't warrant their own section.
 5. No numbered pattern IDs as top-level headers
 6. No Risk/Details/When-to-check boilerplate
 7. No TodoWrite or workflow steps
-8. No single-commit-specific knowledge — every section must be reusable
+8. No single-commit-specific knowledge, every section must be reusable
 9. Quick Checks section at the end (if applicable)
 10. Code examples use `// CORRECT` / `// WRONG` labels
 11. Added to `subsystem.md` trigger table

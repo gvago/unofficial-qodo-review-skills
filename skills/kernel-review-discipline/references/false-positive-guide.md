@@ -11,7 +11,7 @@ as carefully as possible.
 
 **Corollary (from callstack.md)**: For deadlocks, infinite waits, crashes, and
 data corruption, "concrete evidence" means proving the code path is structurally
-possible — not proving it will definitely execute on every run. A
+possible, not proving it will definitely execute on every run. A
 `wait_event` with no timeout and no fallback wake condition is a deadlock bug
 if the wake condition depends on external events that can stop. Do not dismiss
 such bugs as "unlikely in practice."
@@ -293,7 +293,7 @@ must still report this regression []
 
 Issues tagged `subsystem_guide_violation: true`, or with category
 `guide-directive` or `issue_type: "potential-issue"` with a `guide_directive`
-field, are subsystem guide violations. The subsystem guide is authoritative —
+field, are subsystem guide violations. The subsystem guide is authoritative , 
 the violation itself is treated as factually correct.
 
 **STOP. For these issues, ONLY perform these three hallucination checks. Do
@@ -311,9 +311,9 @@ NOTHING else. Do NOT apply sections 1-14. Do NOT apply TASK POSITIVE.1.**
 3. **Does the code actually violate the guide rule?** Read the cited code and
    the guide rule side by side. Confirm the code does the thing the guide says
    not to do (or fails to do the thing the guide requires). If the agent
-   mismatched rule to code — e.g., the guide prohibits pattern X but the code
+   mismatched rule to code, e.g., the guide prohibits pattern X but the code
    does pattern Y, or the guide requires lock L but the code already holds
-   lock L — eliminate the issue.
+   lock L, eliminate the issue.
 
 **If all three checks pass, PRESERVE the issue. You are done.**
 
@@ -369,7 +369,7 @@ Before reporting ANY regression, verify:
      - Output: current triggering path or "theoretical future issue only"
      - NOTE: "theoretical" means the code path cannot be reached today.
        A bug that depends on runtime conditions (timing, system state) is
-       not theoretical — it is a real bug with a conditional trigger.
+       not theoretical, it is a real bug with a conditional trigger.
 5. **Did I check the commit message and surrounding comments?**
    - Read the entire commit message
      - Output: quote any text explaining this behavior, or "no explanation found"

@@ -364,7 +364,7 @@ terraform {
 }
 ```
 
-Terraform Cloud provides: built-in state management and locking, remote execution, Sentinel policy enforcement, cost estimation, private module registry, VCS integration — no backend infra to manage.
+Terraform Cloud provides: built-in state management and locking, remote execution, Sentinel policy enforcement, cost estimation, private module registry, VCS integration, no backend infra to manage.
 
 ### Backend Configuration Best Practices
 
@@ -467,7 +467,7 @@ terraform {
 }
 ```
 
-**Migration from DynamoDB:** Set both `dynamodb_table` and `use_lockfile = true` during Terraform 1.10+ migration — locks acquire via both mechanisms. Once every workflow runs on 1.10+, remove `dynamodb_table`.
+**Migration from DynamoDB:** Set both `dynamodb_table` and `use_lockfile = true` during Terraform 1.10+ migration, locks acquire via both mechanisms. Once every workflow runs on 1.10+, remove `dynamodb_table`.
 
 ### DynamoDB Locking for S3 (Pre-1.10 or Legacy)
 
@@ -486,7 +486,7 @@ terraform plan
 # Another user attempts operation
 terraform apply
 # Sees: Error acquiring the state lock
-# Default: `-lock-timeout=0s` — fail immediately on lock contention.
+# Default: `-lock-timeout=0s`, fail immediately on lock contention.
 # Set `-lock-timeout=<duration>` (e.g. `5m`) to retry with backoff for the specified window.
 #   terraform apply -lock-timeout=5m
 ```
@@ -864,7 +864,7 @@ resource "aws_db_instance" "this" {
 ```
 
 > **Caveat:** The data source writes `secret_string` into state on every refresh,
-> so this pattern avoids hardcoding — it does not exclude the secret from state.
+> so this pattern avoids hardcoding, it does not exclude the secret from state.
 > For true state exclusion, use an `ephemeral` resource/data source
 > (Terraform 1.10+), `manage_master_user_password`, or a CI-injected env var.
 
@@ -990,7 +990,7 @@ terraform login
 The Terraform Cloud workspace is created automatically on first `terraform init`
 against the `cloud {}` block below (provided the org permits auto-creation).
 Alternatively, pre-create it in the TFC UI or with the `tfe_workspace` resource.
-Do NOT use `terraform workspace new` here — CLI workspaces are a different
+Do NOT use `terraform workspace new` here, CLI workspaces are a different
 concept from Terraform Cloud workspaces.
 
 **Step 2: Update backend config**
@@ -1226,8 +1226,8 @@ Terraform calls the provider plugin's `Destroy` RPC during apply. Keep the provi
 
 **Two-phase removal**
 
-1. **Phase 1 — destroy resources, keep provider:** Delete resource blocks from config (or mark for destruction). Keep the `provider` block and `required_providers` entry. Run `terraform plan` and confirm target resources show `destroy`. Run `terraform apply`. Run `terraform state list` and verify no resources remain for that provider.
-2. **Phase 2 — remove provider:** Remove the `provider` block and the `required_providers` entry. Run `terraform init`. Run `terraform plan` and expect no changes and no errors.
+1. **Phase 1, destroy resources, keep provider:** Delete resource blocks from config (or mark for destruction). Keep the `provider` block and `required_providers` entry. Run `terraform plan` and confirm target resources show `destroy`. Run `terraform apply`. Run `terraform state list` and verify no resources remain for that provider.
+2. **Phase 2, remove provider:** Remove the `provider` block and the `required_providers` entry. Run `terraform init`. Run `terraform plan` and expect no changes and no errors.
 
 **`removed` block**
 
@@ -1437,7 +1437,7 @@ resource "aws_instance" "app" {
 - Critical infrastructure vs experimental features
 
 ✅ **Large state files:**
-- State operations becoming slow (>1000 resources — rough heuristic, depends on provider refresh time)
+- State operations becoming slow (>1000 resources, rough heuristic, depends on provider refresh time)
 
 ✅ **Independent deployment cadence:**
 - Database needs weekly updates
@@ -1463,7 +1463,7 @@ resource "aws_instance" "app" {
 | Factor | Split State | Single State |
 |--------|-------------|--------------|
 | **Team size** | Multiple teams | Single team |
-| **Resource count** | >500 resources | <100 resources (rough heuristics — depends on provider refresh time) |
+| **Resource count** | >500 resources | <100 resources (rough heuristics, depends on provider refresh time) |
 | **Update frequency** | Different cadences | Same cadence |
 | **Risk tolerance** | Low (production) | High (dev/test) |
 | **Coupling** | Loosely coupled | Tightly coupled |
@@ -1803,7 +1803,7 @@ A targeted destroy can cascade far beyond its targets via implicit dependencies.
 4. Get explicit user confirmation of the full list before proceeding
 5. ❌ Never use `-auto-approve` on destroy in production
 
-### LLM Mistake Checklist — State Management
+### LLM Mistake Checklist, State Management
 
 Common model mistakes to correct before returning state-related recommendations:
 

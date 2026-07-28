@@ -54,7 +54,7 @@ ethtool -S lists, and adds maintenance burden.
 
 - **Stats that have a standard uAPI must not be duplicated in `ethtool -S`.**
   The `ethtool -S` interface (`get_ethtool_stats()` / `get_sset_count()` /
-  `get_strings()`) is for driver-private statistics only — counters that are
+  `get_strings()`) is for driver-private statistics only, counters that are
   specific to the hardware or driver and have no standard representation.
 - Standard uAPIs exist for common SW-maintained and standards-defined HW
   counters. Categories with standard interfaces include:
@@ -121,7 +121,7 @@ Common broken patterns:
 - **Trylock loops to avoid deadlock**: using `mutex_trylock()` or
   `spin_trylock()` in a loop or repeated invocation to avoid a lock
   ordering issue is a sign that the locking design is wrong. Trylock is
-  only acceptable in narrow cases — for example, a work item that calls
+  only acceptable in narrow cases, for example, a work item that calls
   `mutex_trylock()` and on failure reschedules itself (via
   `schedule_work()` / `schedule_delayed_work()`) so the work runs again
   later. Open-coded retry loops around trylock, or trylock with fallback
@@ -136,7 +136,7 @@ The correct alternatives depend on the access pattern:
   `del_timer_sync()` / `cancel_work_sync()`
 
 **REPORT as bugs**: any pattern where a flag, atomic variable, or bit
-operation appears to guard a section of code rather than express state —
+operation appears to guard a section of code rather than express state , 
 i.e., where the flag is set on entry and cleared on exit of a code region
 to prevent concurrent access, instead of using a proper lock or RCU.
 

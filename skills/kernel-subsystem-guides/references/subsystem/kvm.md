@@ -172,7 +172,7 @@ physical CPU.
   setting the request bit, paired with `smp_mb__after_atomic()` in
   `kvm_check_request()`. Callers MUST NOT add manual barriers around
   `kvm_make_request()`. The IPI-kick path (`kvm_vcpu_kick`) pairs with a full
-  `smp_mb()` and the vcpu's `IN_GUEST_MODE` flag — see
+  `smp_mb()` and the vcpu's `IN_GUEST_MODE` flag, see
   `Documentation/virt/kvm/vcpu-requests.rst` "Ensuring Requests Are Seen".
 - **Updates to hardware-shared SPTE bits preserve concurrent hardware
   writes.** When KVM updates SPTE bits that the hardware page-table walker

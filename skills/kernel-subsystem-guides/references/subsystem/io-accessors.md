@@ -33,7 +33,7 @@ behavior (defined in `include/asm-generic/io.h`, architectures may override):
 
 Code that uses `writesl()` or `readsl()` for bulk FIFO transfers but
 `writel()` or `readl()` for remainder/partial transfers to the same FIFO
-address is an endianness portability bug — the remainder bytes get
+address is an endianness portability bug, the remainder bytes get
 byte-swapped on big-endian systems while the bulk data does not. See
 `i3c_writel_fifo()` and `i3c_readl_fifo()` in `drivers/i3c/internals.h`
 for the correct pattern.

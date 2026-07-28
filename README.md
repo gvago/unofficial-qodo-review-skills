@@ -1,7 +1,7 @@
 # Unofficial Qodo Review Skills
 
 Community-authored [agent skills](https://code.claude.com/docs/en/skills) shaped for
-**Qodo Merge PR review** — the skills agent that discovers `SKILL.md` files in a repo and
+**Qodo Merge PR review**, the skills agent that discovers `SKILL.md` files in a repo and
 emits review findings driven by their rules.
 
 > **Unofficial.** Not affiliated with or endorsed by Qodo. These are community adaptations.
@@ -20,14 +20,14 @@ When enabled, the review pipeline scans these directories at a repo root:
 ```
 
 For each `SKILL.md` it reads the frontmatter `description`, decides whether the skill is
-relevant to the PR diff, and — for the ones that pass — applies the skill body's rules to
+relevant to the PR diff, and, for the ones that pass, applies the skill body's rules to
 the changed code, citing the skill in each finding.
 
 That means a review skill must:
 
 - declare a `description` that reads as a **review lens** (so the relevance filter fires),
 - contain **concrete, checkable rules** the agent can point at a diff span for,
-- assume **no execution** — the agent sees a unified diff, not a live workspace.
+- assume **no execution**, the agent sees a unified diff, not a live workspace.
 
 ## Available skills
 
@@ -45,28 +45,28 @@ Nine skills that work together. The orchestrator routes a kernel diff through th
 | Skill | Sashiko stage | Lens |
 |-------|---------------|------|
 | [`linux-kernel-review`](skills/linux-kernel-review/SKILL.md) | orchestration | Router + shared low-noise contract |
-| [`kernel-change-intent`](skills/kernel-change-intent/SKILL.md) | 1–2 | Design soundness, UAPI breakage, commit-message-vs-code |
+| [`kernel-change-intent`](skills/kernel-change-intent/SKILL.md) | 1-2 | Design soundness, UAPI breakage, commit-message-vs-code |
 | [`kernel-execution-flow`](skills/kernel-execution-flow/SKILL.md) | 3 | Control flow, error paths, NULL, uninitialized values |
 | [`kernel-resource-lifecycle`](skills/kernel-resource-lifecycle/SKILL.md) | 4 | Leaks, UAF, refcounts, async teardown symmetry |
 | [`kernel-locking-concurrency`](skills/kernel-locking-concurrency/SKILL.md) | 5 | Races, deadlocks, RCU, barriers (findings must name both racing contexts) |
 | [`kernel-security-audit`](skills/kernel-security-audit/SKILL.md) | 6 | OOB, integer overflow, TOCTOU, info leaks, privesc |
 | [`kernel-driver-hardware`](skills/kernel-driver-hardware/SKILL.md) | 7 | Registers, DMA, barriers, IRQ, device state machines |
 | [`kernel-subsystem-guides`](skills/kernel-subsystem-guides/SKILL.md) | shared context | Trigger table → 67 per-subsystem invariant guides ([masoncl/review-prompts](https://github.com/masoncl/review-prompts), MIT) |
-| [`kernel-review-discipline`](skills/kernel-review-discipline/SKILL.md) | 9–10 | False-positive gate + severity calibration — **always applied last** |
+| [`kernel-review-discipline`](skills/kernel-review-discipline/SKILL.md) | 9-10 | False-positive gate + severity calibration, **always applied last** |
 
 Sashiko's stages 8 and 11 (dedup, LKML report rendering) are pipeline mechanics that the
 Qodo platform performs natively, so only their reasoning rules were kept. Kernel severity
 maps to the Qodo contract as Critical/High → `action_required`, Medium →
 `remediation_recommended`, Low → `informational`.
 
-For the full kernel suite, copy **all nine** `linux-kernel-review`/`kernel-*` folders — the
+For the full kernel suite, copy **all nine** `linux-kernel-review`/`kernel-*` folders, the
 orchestrator and discipline gate assume the lenses are present. Eval fixtures (a buggy vs
 fixed demo driver with expected findings) live in
 [`skills/linux-kernel-review/evals/`](skills/linux-kernel-review/evals/).
 
 ## Usage
 
-Drop a skill folder into one of the scanned directories of the repo you want reviewed —
+Drop a skill folder into one of the scanned directories of the repo you want reviewed , 
 e.g. copy `skills/terraform-review/` into your project's `skills/` (or `.qodo/skills/`).
 The Qodo skills agent discovers it on the next review.
 
@@ -85,13 +85,13 @@ contract and rule framing toward *reviewing a diff*. Reference files under
 `skills/terraform-review/references/` are reproduced from the source under the same license.
 
 The `linux-kernel-review` suite adapts the review protocol of
-[**Sashiko**](https://github.com/sashiko-dev/sashiko) (Linux Foundation, Apache-2.0) —
+[**Sashiko**](https://github.com/sashiko-dev/sashiko) (Linux Foundation, Apache-2.0) , 
 its 11 reviewer-persona stages repackaged as diff-review skills. The subsystem guides and
 discipline references are reproduced from
 [**masoncl/review-prompts**](https://github.com/masoncl/review-prompts) by
 **Chris Mason** (MIT, see [THIRD_PARTY_LICENSE-masoncl-review-prompts](THIRD_PARTY_LICENSE-masoncl-review-prompts)).
 Sashiko's Rust infrastructure (lore/NNTP ingestion, worktrees, webhooks, UI) was deliberately
-not converted — the Qodo platform provides ingestion, consolidation, and rendering.
+not converted, the Qodo platform provides ingestion, consolidation, and rendering.
 
 ## License
 

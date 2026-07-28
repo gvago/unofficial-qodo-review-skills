@@ -72,12 +72,12 @@ NFSD uses multiple reference count types with different semantics:
 
 **`cl_rpc_users` vs `cl_nfsdfs.cl_ref` vs `cl_cb_inflight`:**
 `cl_nfsdfs.cl_ref` only prevents freeing of the nfsdfs client object.
-`cl_rpc_users` prevents unhashing — used for incoming RPC compounds and async
+`cl_rpc_users` prevents unhashing, used for incoming RPC compounds and async
 operations like copy workers that need the client to remain active past the
 compound's lifetime. `cl_cb_inflight` tracks outgoing callbacks;
 `nfsd4_run_cb()` increments it internally, and `destroy_client()` waits for
 it to drain via `nfsd4_shutdown_callback()`. Do not confuse `cl_rpc_users`
-with `cl_cb_inflight` — they protect different directions of communication.
+with `cl_cb_inflight`, they protect different directions of communication.
 
 **Assignment timing:** Assign resources to struct fields only after validation
 completes. Use temp variables until validation passes. Pattern from
@@ -95,7 +95,7 @@ completes. Use temp variables until validation passes. Pattern from
 Transfer semantics (function "steals" a reference) are acceptable when documented.
 
 **Stateowner refcounting (`so_count`):** Hash/list membership on `cl_ownerstr_hashtbl`
-and `cl_openowners` is NOT a counted reference — `hash_openowner()` does no
+and `cl_openowners` is NOT a counted reference, `hash_openowner()` does no
 `atomic_inc`. The `so_count=1` set by `alloc_stateowner()` is the creation
 reference transferred to the caller. Stateids take additional counted refs via
 `init_open_stateid()` → `nfs4_get_stateowner()` (stored in `stp->st_stateowner`).
@@ -107,7 +107,7 @@ drains stateids (each `nfs4_free_ol_stateid` drops its owner ref via
 `nfs4_put_stateowner`), then issues one final `nfs4_put_stateowner` which reaches
 `so_count=0` and frees the owner. Both callers (`find_or_alloc_open_stateowner` and
 `__destroy_client`) hold a pin (`find_openstateowner_str` ref or explicit
-`nfs4_get_stateowner`) that `release_openowner` consumes — do NOT add an extra
+`nfs4_get_stateowner`) that `release_openowner` consumes, do NOT add an extra
 `nfs4_put_stateowner` after `release_openowner` returns.
 
 ## File Handle Lifecycle
@@ -301,7 +301,7 @@ idmap path handles namespace conversion internally.
 Callbacks are asynchronous RPCs from server to client.
 
 **Reference requirements:** Client lifetime during callbacks is managed by
-`cl_cb_inflight`, which `nfsd4_run_cb()` increments internally — callers do
+`cl_cb_inflight`, which `nfsd4_run_cb()` increments internally, callers do
 NOT need to increment `cl_rpc_users` for callback dispatch. Delegation
 callbacks need `sc_count` increment before `nfsd4_run_cb()` to keep the
 delegation stid alive (see NFSv4 Stateid Lifecycle). Release handlers must

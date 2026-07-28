@@ -44,12 +44,12 @@ must be called on the destination buffer afterward. This zeroes out special
 fields so kernel addresses and lock state are not exposed.
 
 Reference implementations:
-- Syscall path: `bpf_map_copy_value()` in `kernel/bpf/syscall.c` — calls
+- Syscall path: `bpf_map_copy_value()` in `kernel/bpf/syscall.c`, calls
   `map->ops->map_lookup_elem()` for the pointer, then `copy_map_value()` +
   `check_and_init_map_value()` on the destination buffer
-- Percpu: `bpf_percpu_array_copy()`, `bpf_percpu_hash_copy()` — handle
+- Percpu: `bpf_percpu_array_copy()`, `bpf_percpu_hash_copy()`, handle
   their own copy + init internally
-- Batch: `generic_map_lookup_batch()` — delegates to `bpf_map_copy_value()`
+- Batch: `generic_map_lookup_batch()`, delegates to `bpf_map_copy_value()`
 
 ### Update (userspace to kernel copy)
 
@@ -64,7 +64,7 @@ Reference implementations (these call `bpf_obj_free_fields()` internally):
   `check_and_free_fields()`)
 - Percpu: `bpf_percpu_array_update()`, `bpf_percpu_hash_update()` (via
   `pcpu_copy_value()`)
-- Batch: `generic_map_update_batch()` — delegates to the map's
+- Batch: `generic_map_update_batch()`, delegates to the map's
   `map_update_elem` callback
 
 ## BPF-001: Missing BTF Field Handling in Map Copy/Update
@@ -79,7 +79,7 @@ or `copy_map_value_long()`, verify:
 4. Compare with the reference implementation for the same operation type.
 
 Percpu and non-percpu variants of the same map type may have different
-allowlists — verify the exact `BPF_MAP_TYPE_*` enum value.
+allowlists, verify the exact `BPF_MAP_TYPE_*` enum value.
 
 **REPORT as bugs**: Map operations on field-capable map types that copy
 values with `copy_map_value()` without the corresponding

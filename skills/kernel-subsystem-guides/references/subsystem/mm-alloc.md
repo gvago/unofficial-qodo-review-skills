@@ -220,7 +220,7 @@ calls must be guarded by the same condition.
 - **NUMA mempolicy-aware vs node-specific allocation**: `alloc_pages_node()`
   / `__alloc_pages_node()` bypass task NUMA policy (`mbind()`,
   `set_mempolicy()`). Replacing `alloc_pages()` / `folio_alloc()` with
-  `_node` variants silently drops mempolicy — invisible in testing, pages
+  `_node` variants silently drops mempolicy, invisible in testing, pages
   land on wrong nodes. Branch: mempolicy-aware for `NUMA_NO_NODE`,
   node-specific for explicit node. See `___kmalloc_large_node()` in
   `mm/slub.c`
@@ -276,7 +276,7 @@ calls must be guarded by the same condition.
   on these architectures
 - **KASAN granule alignment in vmalloc poison/unpoison**: `kasan_poison()`/
   `kasan_unpoison()` require `KASAN_GRANULE_SIZE`-aligned addresses. In
-  realloc paths, `vm->requested_size` is arbitrary — passing `p + old_size`
+  realloc paths, `vm->requested_size` is arbitrary, passing `p + old_size`
   directly triggers splats. Use `kasan_vrealloc()` which handles partial
   granule boundaries
 - **`static_branch_*()` on allocation paths**: these acquire

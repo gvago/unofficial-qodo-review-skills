@@ -25,7 +25,7 @@ architectural inconsistencies.
     has entered the `RUNNING` state.
 *   **Predicate for "guest has started running":** Use
     `vcpu_has_run_once(vcpu)` (defined in `arch/arm64/include/asm/kvm_host.h`
-    — checks `vcpu->pid`, which `kvm_arch_vcpu_run_pid_change()` populates on
+   , checks `vcpu->pid`, which `kvm_arch_vcpu_run_pid_change()` populates on
     the first guest entry). Do NOT use `kvm_vcpu_initialized(vcpu)` for this
     question: it reflects only whether `KVM_ARM_VCPU_INIT` has been called and
     remains true forever after, including mid-run and post-run. Any
@@ -60,7 +60,7 @@ architectural inconsistencies.
 *   Modifying guest feature registers (e.g., `ID_AA64*`) after the first VCPU
     has entered the `RUNNING` state.
 *   Gating "has the guest started running" with `kvm_vcpu_initialized()`
-    instead of `vcpu_has_run_once()` — accepts post-run reconfiguration.
+    instead of `vcpu_has_run_once()`, accepts post-run reconfiguration.
 *   **UAPI Feature Exposure:** Exposing `ID_AA64*` register fields to
     userspace for hardware features that are not explicitly supported or fully
     implemented. **Reviewer check:** Ensure any exposed bit has a
@@ -133,7 +133,7 @@ access patterns.
 
 *   **HCR_EL2 Sync:** `HCR_EL2` writes that affect TLB-cached fields (`RW`,
     `NV1`, `NV`, `E2H`, `FWB`, `DCT`) require TLB invalidation before
-    translation changes take effect — `ERET` alone does not flush these cached
+    translation changes take effect, `ERET` alone does not flush these cached
     fields. For non-TLB-cached fields, an `ERET` to EL1/0 acts as a CSE
     provided `SCTLR_ELx.EOS == 1` (always check `FEAT_ExS` semantics in
     nVHE/VHE paths). World-switch barrier placement differs between nVHE and
@@ -147,7 +147,7 @@ access patterns.
     guest misconfiguration. Every new field exposure must be paired with the
     correct `kvm_id_reg_rw_mask` or RESx-handling entry and a corresponding
     trap/enablement in `HCR_EL2`, `CPTR_EL2`, or `MDCR_EL2`.
-*   **`vcpu_sysreg` numbering is sparse — never range-check it:** `enum
+*   **`vcpu_sysreg` numbering is sparse, never range-check it:** `enum
     vcpu_sysreg` (`arch/arm64/include/asm/kvm_host.h`) indexes
     `vcpu->arch.ctxt.sys_regs[]`, but VNCR-mapped entries are numbered by their
     VNCR-page byte offset (`VNCR(r)` = `__VNCR_START__ + VNCR_r / 8`), not in

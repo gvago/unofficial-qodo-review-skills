@@ -35,7 +35,7 @@ paths (NAPI poll). Each pair of paths is a potential race to analyze.
 Take two code paths, lay them side by side. Find an interleaving that
 produces a wrong outcome.
 
-Example — TOCTOU race on a list:
+Example, TOCTOU race on a list:
 ```
 CPU 0 (delete)                    CPU 1 (add)
 ──────────────                    ──────────
@@ -55,7 +55,7 @@ atomic region.
 
 For each shared variable V, compute the intersection of locks held across
 all accesses by any thread. If the intersection is empty, no single lock
-protects V across all accesses — potential race.
+protects V across all accesses, potential race.
 
 ```
 Path A: spin_lock(&obj->lock); obj->counter++; spin_unlock(&obj->lock);
@@ -65,7 +65,7 @@ L(A) = {obj->lock}, L(B) = {}
 C(obj->counter) = {obj->lock} ∩ {} = {} → RACE
 ```
 
-The lock must also be the right *type* for the execution contexts — see
+The lock must also be the right *type* for the execution contexts, see
 Lock Context Compatibility (§4).
 
 ### Step 5: Check Object Lifetime
@@ -96,7 +96,7 @@ running the same syscall on a different object, an interrupt on this CPU,
 a timer/workqueue, a concurrent `close()` or module unload.
 
 **Q3: Is the lock type strong enough?** A `spin_lock()` protecting data
-also accessed from an IRQ handler is insufficient — see §4.
+also accessed from an IRQ handler is insufficient, see §4.
 
 **Q4: Is the object still alive?** Was the pointer obtained under a lock
 or RCU read-side section that is still held? Was a reference count taken?
@@ -142,7 +142,7 @@ these checks. Any violation is a bug. Report it.
 | `raw_spinlock_t` | `raw_spinlock_t` | `spinlock_t`, `local_lock`, `local_trylock`, `mutex`, `rwsem` |
 | `spinlock_t` | `raw_spinlock_t`, `spinlock_t`, `local_lock`, `local_trylock` | `mutex`, `rwsem` |
 | `local_lock` / `local_trylock` | `raw_spinlock_t`, `spinlock_t`, `local_lock`, `local_trylock` | `mutex`, `rwsem` |
-| `mutex` / `rwsem` | all | — |
+| `mutex` / `rwsem` | all |, |
 
 Fix for intentional violations: `DEFINE_WAIT_OVERRIDE_MAP(map,
 LD_WAIT_CONFIG)` with `lock_map_acquire_try(&map)` /
@@ -182,11 +182,11 @@ Even with `READ_ONCE()`/`WRITE_ONCE()`, the CPU may reorder stores and
 loads. When publishing a pointer to initialized data:
 
 ```c
-// WRONG — Store 2 may become visible before Store 1:
+// WRONG, Store 2 may become visible before Store 1:
 data->field = 42;                      // Store 1
 WRITE_ONCE(global_ptr, data);          // Store 2
 
-// RIGHT — release barrier ensures Store 1 completes before Store 2:
+// RIGHT, release barrier ensures Store 1 completes before Store 2:
 data->field = 42;
 smp_store_release(&global_ptr, data);
 
@@ -214,7 +214,7 @@ if (p) x = p->field;                  // guaranteed to see 42
     event_indicated = 1;                do_something(my_data);
                                     }
   ```
-- `atomic_read()`/`atomic_set()` are relaxed — no ordering. RMW ops
+- `atomic_read()`/`atomic_set()` are relaxed, no ordering. RMW ops
   that return values (`atomic_add_return()`, `atomic_cmpxchg()`) provide
   full ordering. Use `smp_load_acquire()`/`smp_store_release()` or the
   `_acquire`/`_release` atomic variants for plain loads/stores that need
@@ -273,7 +273,7 @@ kfree(old) ← BUG!
                                   rcu_read_unlock()
 ```
 
-Use `call_rcu(&old->rcu_head, free_fn)` — the callback runs only after
+Use `call_rcu(&old->rcu_head, free_fn)`, the callback runs only after
 all pre-existing RCU read-side sections complete.
 
 - `synchronize_rcu()` blocks until all pre-existing RCU read-side
@@ -296,9 +296,9 @@ all pre-existing RCU read-side sections complete.
 - **CPU hotplug** (`cpus_read_lock()`/`cpus_read_unlock()`): prevents
   CPUs from going online/offline. Required when using per-CPU resources
   allocated in hotplug callbacks (`cpuhp_setup_state()`). Neither
-  preemption nor migration disable prevents hotunplug — they only pin
+  preemption nor migration disable prevents hotunplug, they only pin
   the task. `cpus_read_lock()` acquires `cpu_hotplug_lock` as a
-  `percpu_rw_semaphore` — it sleeps, cannot be held in atomic context.
+  `percpu_rw_semaphore`, it sleeps, cannot be held in atomic context.
   When sleeping is needed in a per-CPU critical section, alternatives:
   (a) `cpus_read_lock()`, (b) a mutex within each per-CPU structure
   serializing with teardown callback, or (c) a refcount on the per-CPU
@@ -341,7 +341,7 @@ lockdep warnings on RT.
   preemption or IRQs respectively (no actual lock). On RT, they map to
   `spinlock_t` + `migrate_disable()`, so `local_lock` can sleep.
   Guard with `!preemptible()`, NOT `in_nmi() ||
-  in_hardirq()` — the latter misses `preempt_disable()` sections.
+  in_hardirq()`, the latter misses `preempt_disable()` sections.
   `preemptible()` checks `preempt_count() == 0 && !irqs_disabled()`.
   `in_hardirq()` only detects hardware interrupt context; it misses
   `preempt_disable()` sections and other non-preemptible contexts (e.g.,
@@ -350,7 +350,7 @@ lockdep warnings on RT.
   acquires the underlying rt_mutex without masking interrupts).
 - `local_irq_disable()` still disables IRQs on RT.
 - `raw_spinlock_t` code must not acquire `spinlock_t`, `local_lock`,
-  or `local_trylock` — see Lock Nesting (§5).
+  or `local_trylock`, see Lock Nesting (§5).
 
 ## 13. Seqlocks
 
@@ -464,14 +464,14 @@ c = next_c ← FREED MEMORY
 
 ### The Algorithm
 
-1. Find all shared data — variables accessed from multiple code paths
+1. Find all shared data, variables accessed from multiple code paths
 2. For each, list every path and its execution context
-3. For each pair, compute lockset intersection — empty = potential race
-4. Build the interleaved timeline — find a specific wrong outcome
+3. For each pair, compute lockset intersection, empty = potential race
+4. Build the interleaved timeline, find a specific wrong outcome
 5. Check lock context compatibility (§4)
-6. Check object lifetimes — reference or RCU held after lock release?
-7. Check memory ordering — publish patterns need acquire/release
-8. Check TOCTOU — condition and action in the same atomic region?
+6. Check object lifetimes, reference or RCU held after lock release?
+7. Check memory ordering, publish patterns need acquire/release
+8. Check TOCTOU, condition and action in the same atomic region?
 
 ### Quick Checks
 
@@ -484,7 +484,7 @@ c = next_c ← FREED MEMORY
 - **`raw_spinlock_t` for hardirq on RT**: `spinlock_t` in IRQ handlers
   triggers lockdep splat on RT.
 - **Context guards on RT**: use `!preemptible()`, not `in_nmi() ||
-  in_hardirq()` — the latter misses `preempt_disable()` sections.
+  in_hardirq()`, the latter misses `preempt_disable()` sections.
 - **Completion variables**: use `wait_for_completion()`/`complete()`
   instead of open-coded spinlock polling loops.
 - **`percpu_rw_semaphore`**: for read-heavy patterns where reads vastly
@@ -499,7 +499,7 @@ c = next_c ← FREED MEMORY
   violation can occur at all, it is a bug.
 - **A validation check before the exclusion point is NOT protection.**
   If code checks shared state then acquires exclusion, the check is
-  TOCTOU — a concurrent path can modify/free the data between the check
+  TOCTOU, a concurrent path can modify/free the data between the check
   and exclusion. Do not dismiss because "the check would detect it."
 - **A single abort path does not make a race safe.** When evaluating
   whether a race is "handled," you will find one recovery point and

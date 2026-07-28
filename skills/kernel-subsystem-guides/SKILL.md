@@ -1,6 +1,6 @@
 ---
 name: kernel-subsystem-guides
-description: "Use when a Linux kernel PR diff matches a known subsystem (mm, block, net, btrfs, io_uring, KVM, DRM, USB, scheduler, and 60+ more) \u2014 router into per-subsystem invariant guides from Chris Mason's masoncl/review-prompts knowledge base; load every guide whose trigger row matches before analysis. Part of the linux-kernel-review suite."
+description: "Use when a Linux kernel PR diff matches a known subsystem (mm, block, net, btrfs, io_uring, KVM, DRM, USB, scheduler, and 60+ more), router into per-subsystem invariant guides from Chris Mason's masoncl/review-prompts knowledge base; load every guide whose trigger row matches before analysis. Part of the linux-kernel-review suite."
 license: MIT
 metadata:
   author: Sashiko contributors / Chris Mason
@@ -15,7 +15,7 @@ metadata:
 Per-subsystem invariants, API contracts, and bug patterns (Sashiko's
 shared-context knowledge base). This skill is a router: match the diff
 against the trigger table and load EVERY matching guide from
-references/subsystem/ before analysis. A change can match multiple rows —
+references/subsystem/ before analysis. A change can match multiple rows , 
 code in arch/arm64/kvm/hyp/ matches ARM64, KVM, ARM64 KVM, and ARM64 Hyp,
 and all four apply.
 
@@ -98,7 +98,7 @@ from data structures happens BEFORE or AFTER the call_rcu().
 
 ## Optional
 
-- subjective-review.md — subjective general assessment, only when
+- subjective-review.md, subjective general assessment, only when
   explicitly requested.
 
 ## Sourcing

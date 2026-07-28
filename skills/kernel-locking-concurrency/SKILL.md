@@ -1,6 +1,6 @@
 ---
 name: kernel-locking-concurrency
-description: "Use when a Linux kernel PR diff touches locks, atomics, RCU, IRQs, or deferred work \u2014 concurrency audit (Sashiko stage 5): races, deadlocks, lock-context violations, missing barriers, RCU misuse. Every finding must name the two racing contexts. Part of the linux-kernel-review suite."
+description: "Use when a Linux kernel PR diff touches locks, atomics, RCU, IRQs, or deferred work, concurrency audit (Sashiko stage 5): races, deadlocks, lock-context violations, missing barriers, RCU misuse. Every finding must name the two racing contexts. Part of the linux-kernel-review suite."
 license: Apache-2.0
 metadata:
   author: Sashiko contributors / Chris Mason
@@ -14,7 +14,7 @@ metadata:
 
 Lens for locking and synchronization audit (Sashiko stage 5). World-class
 concurrency review of the diff. This is the noisiest domain in kernel
-review — every finding must name the two racing contexts.
+review, every finding must name the two racing contexts.
 
 ## How to apply
 
@@ -63,14 +63,14 @@ review — every finding must name the two racing contexts.
 ## What NOT to flag
 
 - READ_ONCE absence when the data is protected by a lock currently held.
-- Races that existing memory barriers or lock coverage already close —
+- Races that existing memory barriers or lock coverage already close , 
   read references/locking.md before asserting a barrier is missing.
 - Theoretical races with no constructible interleaving.
 
 ## References (load only when needed)
 
-- references/locking.md — full locking invariant catalog (512 lines).
-- references/rcu.md — RCU lifecycle and list rules.
+- references/locking.md, full locking invariant catalog (512 lines).
+- references/rcu.md, RCU lifecycle and list rules.
 
 ## Sourcing
 

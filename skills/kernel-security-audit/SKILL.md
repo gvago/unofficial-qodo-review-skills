@@ -1,6 +1,6 @@
 ---
 name: kernel-security-audit
-description: "Use when a Linux kernel PR diff handles untrusted input (copy_from_user, get_user, ioctl args, netlink attrs, network or firmware data) \u2014 security lens (Sashiko stage 6): OOB access, integer overflow, TOCTOU, info leaks to userspace, privilege escalation in the CHANGED code only. Part of the linux-kernel-review suite."
+description: "Use when a Linux kernel PR diff handles untrusted input (copy_from_user, get_user, ioctl args, netlink attrs, network or firmware data), security lens (Sashiko stage 6): OOB access, integer overflow, TOCTOU, info leaks to userspace, privilege escalation in the CHANGED code only. Part of the linux-kernel-review suite."
 license: Apache-2.0
 metadata:
   author: Sashiko contributors / Chris Mason
@@ -49,14 +49,14 @@ code.
   pattern is still unsafe.
 - category: Security.
 - evidence: entry point of the untrusted value, the propagation chain, the
-  unsafe use — functions and lines. State the attacker precondition.
+  unsafe use, functions and lines. State the attacker precondition.
 
 ## What NOT to flag
 
 - Bounds checks on values provable to originate only from trusted kernel
   state.
 - Constructs that look unsafe but sit behind capability checks you can
-  cite — cite them and dismiss instead.
+  cite, cite them and dismiss instead.
 - Hardening suggestions (e.g. "use strscpy everywhere") without a proven
   vulnerable path.
 

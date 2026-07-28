@@ -1,6 +1,6 @@
 ---
 name: kernel-execution-flow
-description: "Use when a Linux kernel PR diff changes C/Rust control flow \u2014 traces execution statically (Sashiko stage 3): broken error paths, NULL derefs, uninitialized or stale values, off-by-one loop logic, preprocessor/linkage hazards in the CHANGED code only. Part of the linux-kernel-review suite."
+description: "Use when a Linux kernel PR diff changes C/Rust control flow, traces execution statically (Sashiko stage 3): broken error paths, NULL derefs, uninitialized or stale values, off-by-one loop logic, preprocessor/linkage hazards in the CHANGED code only. Part of the linux-kernel-review suite."
 license: Apache-2.0
 metadata:
   author: Sashiko contributors / Chris Mason
@@ -21,10 +21,10 @@ static analysis engine tracing C (or Rust) execution flow through the diff.
 - Explore every error handling path (goto cleanup;) and prove it behaves
   correctly under failure.
 - Never make assumptions from return types, comments, WARN_ON/BUG_ON, or
-  error-handling patterns — verify by tracing concrete execution paths.
+  error-handling patterns, verify by tracing concrete execution paths.
   Full tracing discipline: references/technical-patterns.md.
 - For deadlock/infinite-wait/crash candidates, prove the path is
-  structurally possible — not that it fires every run. Method:
+  structurally possible, not that it fires every run. Method:
   references/callstack.md.
 
 ## Rule index
@@ -50,7 +50,7 @@ static analysis engine tracing C (or Rust) execution flow through the diff.
   unchecked return on a real path; remediation_recommended when the failure
   path is real but consequence is contained.
 - category: Correctness.
-- evidence: the traced path — caller, condition values, and the line where
+- evidence: the traced path, caller, condition values, and the line where
   behavior diverges from intent.
 
 ## What NOT to flag
@@ -62,9 +62,9 @@ static analysis engine tracing C (or Rust) execution flow through the diff.
 
 ## References (load only when needed)
 
-- references/technical-patterns.md — core kernel tracing rules, context
+- references/technical-patterns.md, core kernel tracing rules, context
   rules, error-handling notes, RCU mandatory check.
-- references/callstack.md — blocking/waiting bug analysis protocol.
+- references/callstack.md, blocking/waiting bug analysis protocol.
 
 ## Sourcing
 

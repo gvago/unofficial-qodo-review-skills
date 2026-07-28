@@ -16,7 +16,7 @@ linear cache report half their actual size, and MCE memory-error reporting
 uses incorrect offsets.
 
 - Use `DEFINE_RES_MEM(start, size)` for CXL HPA (Host Physical Address) ranges
-- Do not use `DEFINE_RES(start, size, 0)` — this creates a resource with type
+- Do not use `DEFINE_RES(start, size, 0)`, this creates a resource with type
   `0`, which silently fails `resource_contains()` checks against
   `IORESOURCE_MEM` resources
 

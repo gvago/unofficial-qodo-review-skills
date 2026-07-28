@@ -188,7 +188,7 @@ completion handler or after synchronous wait
 **Risk**: Data corruption, protocol error
 
 **Details**: Memory Regions must complete invalidation before reuse;
-frwr_unmap_sync() blocks, frwr_unmap_async() does not—do not reuse MR
+frwr_unmap_sync() blocks, frwr_unmap_async() does not, do not reuse MR
 immediately after async invalidate
 
 #### SUNRPC-RDMA-003: Completion status check
@@ -226,7 +226,7 @@ racing completion from reallocating freed context
 
 **Details**: ESTABLISHED takes reference via rpcrdma_ep_get();
 DISCONNECTED releases via rpcrdma_ep_put(); DEVICE_REMOVAL/ADDR_CHANGE
-may fire before ESTABLISHED—track whether reference was taken
+may fire before ESTABLISHED, track whether reference was taken
 
 #### SUNRPC-RDMA-008: Reconnect DMA remapping (client)
 

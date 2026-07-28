@@ -3,7 +3,7 @@
 This pattern analyzes functions for regressions within the callstack as a whole.
 Changes to a function can introduce bugs not only in the function itself, but in
 any function it calls (callees) and any function that calls it (callers). This
-analysis traverses the full callstack — both up and down — to identify
+analysis traverses the full callstack, both up and down, to identify
 side effects, unintended consequences, and regressions that would be invisible
 when examining modified functions in isolation.
 
@@ -25,7 +25,7 @@ If during analysis you conclude something IS a bug and later reverse that
 conclusion, you must treat the reversal with extreme skepticism. State the
 retraction explicitly, re-examine your dismissal reasoning for logical errors,
 and apply a higher burden of proof. "Caller should prevent this" or "normally
-handled" are not sufficient — you must prove the triggering condition is
+handled" are not sufficient, you must prove the triggering condition is
 structurally impossible with concrete code references.
 
 ## CRITICAL: REACHABILITY DISMISSALS
@@ -39,7 +39,7 @@ by arguing:
 - "The old code had a worse bug in the same path"
 - "Extremely unlikely in practice"
 
-Only dismiss if the triggering condition is **structurally impossible** —
+Only dismiss if the triggering condition is **structurally impossible** , 
 meaning the code literally cannot reach that state regardless of timing,
 memory pressure, or concurrent operations.
 
@@ -163,7 +163,7 @@ complete caller analysis.
     acquired at one point, released at another. Verify that EVERY access to the
     protected resource falls within that scope.
   - When a function acquires a lock partway through its body, load all callees
-    that execute before the acquisition — any of them may access the protected
+    that execute before the acquisition, any of them may access the protected
     resource outside the lock's scope.
   - Output: for each concurrent function checked, state the exclusion point and
     confirm no shared-resource access precedes it.

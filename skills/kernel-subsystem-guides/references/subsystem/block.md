@@ -38,7 +38,7 @@ the operation type before accessing data fields.
   `bio_for_each_bvec()`, `bio_for_each_segment()`
 
 **Required guard:** `bio_has_data()` before accessing any data field. Note
-that `op_is_write()` is NOT a valid guard — it checks bit 0 of the op code,
+that `op_is_write()` is NOT a valid guard, it checks bit 0 of the op code,
 so it returns true for `REQ_OP_DISCARD` (3), `REQ_OP_SECURE_ERASE` (5), and
 `REQ_OP_WRITE_ZEROES` (9), all of which have no data. `bio_has_data()`
 correctly excludes these by checking for them explicitly (in addition to
@@ -51,17 +51,17 @@ Treating a mempool-backed bio allocation failure path as reachable under
 `bio_kmalloc()` or `GFP_NOWAIT` allocations causes NULL dereferences under
 memory pressure.
 
-- `bio_alloc()` / `bio_alloc_bioset()` — mempool-backed; cannot fail when
+- `bio_alloc()` / `bio_alloc_bioset()`, mempool-backed; cannot fail when
   `__GFP_DIRECT_RECLAIM` is set (which `GFP_NOIO` and `GFP_NOFS` include).
   Failure paths are only reachable with `GFP_NOWAIT`/`GFP_ATOMIC`.
-- `bvec_alloc()` — first tries slab allocation; if that fails and
+- `bvec_alloc()`, first tries slab allocation; if that fails and
   `__GFP_DIRECT_RECLAIM` is set, falls back to mempool (cannot fail).
-- `bio_integrity_prep()` — allocates from mempool with `GFP_NOIO`; always
+- `bio_integrity_prep()`, allocates from mempool with `GFP_NOIO`; always
   returns `true`.
-- `bio_integrity_alloc_buf()` — tries `kmalloc()` with `GFP_NOIO` minus
+- `bio_integrity_alloc_buf()`, tries `kmalloc()` with `GFP_NOIO` minus
   `__GFP_DIRECT_RECLAIM`; on failure, falls back to `mempool_alloc()` with
   `GFP_NOFS` (cannot fail).
-- `bio_kmalloc()` — uses plain `kmalloc()` with NO mempool backing. Can fail
+- `bio_kmalloc()`, uses plain `kmalloc()` with NO mempool backing. Can fail
   regardless of GFP flags.
 
 ## Elevator `depth_updated` Callback
@@ -93,7 +93,7 @@ A new elevator that derives limits from `q->nr_requests` must also call
 ## Quick Checks
 
 - `REQ_OP_ZONE_APPEND` (7) has bit 0 set, so `op_is_write()` returns true
-  and it does carry data — unlike DISCARD/WRITE_ZEROES/SECURE_ERASE.
+  and it does carry data, unlike DISCARD/WRITE_ZEROES/SECURE_ERASE.
 - `blk_mq_freeze_queue()` returns `unsigned int` (memflags), not `void`.
   Callers must capture the return value and pass it to
   `blk_mq_unfreeze_queue()`.

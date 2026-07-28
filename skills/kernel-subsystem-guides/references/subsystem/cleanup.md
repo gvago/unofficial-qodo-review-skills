@@ -14,8 +14,8 @@ pointer, causing a kernel crash.
 - Verify the wrapper handles all possible allocator return values on every early return path
 
 **Common cleanup wrappers** (see `include/linux/slab.h` and `include/linux/cleanup.h`):
-- `__free(kfree)`: defined as `if (!IS_ERR_OR_NULL(_T)) kfree(_T)` — safe with NULL and ERR_PTR
-- `__free(kfree_sensitive)`: defined as `if (_T) kfree_sensitive(_T)` — safe with NULL only, NOT ERR_PTR
+- `__free(kfree)`: defined as `if (!IS_ERR_OR_NULL(_T)) kfree(_T)`, safe with NULL and ERR_PTR
+- `__free(kfree_sensitive)`: defined as `if (_T) kfree_sensitive(_T)`, safe with NULL only, NOT ERR_PTR
 - Custom `DEFINE_FREE` wrappers: check the guard expression individually
 
 **Mitigation patterns**:
@@ -61,7 +61,7 @@ Cleanup runs in reverse definition order (LIFO). From `include/linux/cleanup.h`:
 - Resources that reference other resources must be defined AFTER their
   dependencies
 - Define and initialize `__free()` variables in a single statement rather
-  than `= NULL` at the top with assignment later — this makes LIFO ordering
+  than `= NULL` at the top with assignment later, this makes LIFO ordering
   mistakes less likely (recommended in `include/linux/cleanup.h`)
 
 ```c
@@ -79,7 +79,7 @@ if (!obj)
 
 err = other_init(obj);
 if (err)
-    return err;  // remove_free(obj) runs AFTER unlock — lock not held!
+    return err;  // remove_free(obj) runs AFTER unlock, lock not held!
 ```
 
 ## Guard Scope
@@ -94,8 +94,8 @@ From `include/linux/cleanup.h`:
 > of automatic variable declaration."
 
 **Scope types**:
-- Function scope: `guard()` at function level — lock held until function returns
-- Block scope: `guard()` inside `if`/`else`/`while` block — lock held only until closing brace
+- Function scope: `guard()` at function level, lock held until function returns
+- Block scope: `guard()` inside `if`/`else`/`while` block, lock held only until closing brace
 - `scoped_guard()`: lock held only for the following compound statement
 
 ```c
@@ -109,7 +109,7 @@ if (condition) {
     guard(mutex)(&lock);
     val = shared_data;  // lock held here
 }  // lock released here
-use(val);  // data race — lock no longer held
+use(val);  // data race, lock no longer held
 ```
 
 ## Ownership Transfer

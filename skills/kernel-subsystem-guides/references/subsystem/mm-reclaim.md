@@ -214,7 +214,7 @@ explicit count instead.
   `TTU_RMAP_LOCKED` is passed to `try_to_migrate()`, `i_mmap_rwsem` must
   stay held until `remove_migration_ptes()` with `RMP_LOCKED`. Dropping
   between phases creates ABBA deadlock (`folio_lock` → `i_mmap_rwsem` vs
-  reverse). Anon vs file-backed use different locks — fixes for one may
+  reverse). Anon vs file-backed use different locks, fixes for one may
   break the other. See `unmap_and_move_huge_page()` in `mm/migrate.c`
 - **kswapd order-dropping and watermark checks**: `kswapd_shrink_node()`
   drops `sc->order` to 0 after reclaiming `compact_gap(order)` pages. Watermark
@@ -236,7 +236,7 @@ explicit count instead.
   infinite loops in `throttle_direct_reclaim()`
 - **Counter-gated tracking list removal**: list membership gated by a
   resource counter (e.g., `shmem_swaplist` requires `info->swapped > 0`).
-  Error paths must check the counter before `list_del_init()` — the object
+  Error paths must check the counter before `list_del_init()`, the object
   may already be on the list from a prior operation. Unconditional removal
   causes iterators to loop forever unable to find remaining resources
 - **List iteration with lock drop**: `list_for_each_entry_safe` is not safe

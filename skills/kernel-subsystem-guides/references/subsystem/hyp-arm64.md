@@ -58,7 +58,7 @@ At EL2 in nVHE/pKVM, a hypercall (or other trap) handler runs as a single
 **atomic, non-preemptible unit on the trapping CPU**, with physical interrupts
 masked, returning to EL1 via `eret` when done. The EL2 hyp is not the kernel:
 there is **no scheduler, no preemption, and none of the kernel-context
-deferred-work machinery** — no `sleep`/`schedule`, workqueues, softirqs, RCU
+deferred-work machinery**, no `sleep`/`schedule`, workqueues, softirqs, RCU
 callbacks, kthreads, `copy_{from,to}_user`, or `printk`/`pr_*`, and no mutexes
 or `irqsave` locks (interrupts are already masked; EL2 locking is
 `hyp_spin_lock`). A handler cannot be preempted part-way through and cannot hand
@@ -68,10 +68,10 @@ work to a later context: whatever it does, it does synchronously before the
 **Worked false-positive.** A finding of the form "this `READ_ONCE()` and the
 later `cmpxchg()` can race because the store becomes visible only after a
 *delayed* write" presumes the handler can be preempted, or its tail deferred,
-between the two. At EL2 nVHE there is no such local gap — the sequence runs to
+between the two. At EL2 nVHE there is no such local gap, the sequence runs to
 completion atomically on the trapping CPU.
 
-**Still in scope — cross-CPU concurrency.** This rule removes only the
+**Still in scope, cross-CPU concurrency.** This rule removes only the
 *local* preemption / deferral assumption. Genuine concurrency between two
 physical CPUs each running a handler against shared EL2 state is real and must
 still be reasoned about under the LKMM (memory ordering, cmpxchg visibility
@@ -91,7 +91,7 @@ different trust regime depending on which side of it executes.
 The boundary is `finalize_pkvm()` (`arch/arm64/kvm/pkvm.c`), registered at
 `device_initcall_sync`. It calls `pkvm_drop_host_privileges()`, which switches
 the host out of EL2 for good. Before this initcall level, the host kernel is
-still executing at EL2 — code is privileged and can directly set up EL2 state,
+still executing at EL2, code is privileged and can directly set up EL2 state,
 install hyp text/data, populate per-CPU state, and finalize trap
 configuration; memory shared with future-EL2 is writable in place. After it
 (`pkvm_drop_host_privileges()` having run), the host is at EL1 and can only
@@ -123,7 +123,7 @@ excluded below).
 *   `is_protected_kvm_enabled()` (`arch/arm64/include/asm/virt.h`) is the
     canonical predicate for "pKVM mode is configured." It becomes true very
     early via cpufeature detection (before any initcall runs) and is
-    independent of de-privilege state — so on its own it does *not* tell you
+    independent of de-privilege state, so on its own it does *not* tell you
     whether the privileged window is still open. The discriminator the
     hypervisor actually uses is the `kvm_protected_mode_initialized` static key
     (read host-side via `is_pkvm_initialized()`), enabled during pKVM
@@ -183,7 +183,7 @@ from any host-controlled source.
     times (double-fetch). Copy the necessary fields to EL2 private memory
     once.
 *   **Allocation Sources:** EL2 MUST NOT draw allocations from a free list or
-    memcache whose head pointer lives in host memory — the host can redirect
+    memcache whose head pointer lives in host memory, the host can redirect
     the allocation to an attacker-chosen physical address (TOCTOU). A
     host-resident cache such as `stage2_teardown_mc` is a sink for host-bound
     reclaim pages, never an allocation source.
@@ -273,7 +273,7 @@ are visible to EL2 leads to **State Desynchronization**.
 | ID Registers | Hyp-Private ID Regs | Sanitisation in `pkvm_hyp_vm` | `arch/arm64/kvm/hyp/nvhe/sys_regs.c` |
 
 *   **Hyp vs. Host Back-Pointer:** `struct pkvm_hyp_vm` *embeds* a `struct kvm
-    kvm` — the EL2-private hyp copy — and separately holds `struct kvm
+    kvm`, the EL2-private hyp copy, and separately holds `struct kvm
     *host_kvm`, a back-pointer to the host's (untrusted) instance. Fields
     accessed via `hyp_vm->kvm.X` are EL2-private and safe to treat as trusted
     after initialisation; fields reached via `hyp_vm->host_kvm->X` are
@@ -302,19 +302,19 @@ single constant hyp tag. It has **no offset accumulation**, so it is idempotent
 on any pointer that *already carries the hyp tag*. Two classes do, and both are
 **below `PAGE_OFFSET`** yet still idempotent:
 
-- The hyp-linear image `kern_hyp_va()` itself produces — so a second application
+- The hyp-linear image `kern_hyp_va()` itself produces, so a second application
   is a no-op.
 - Every EL2 **linear-map** pointer: the hyp page allocator's output
   (`hyp_phys_to_virt` / `hyp_page_to_virt`, `nvhe/memory.h`) and anything
   reachable by `hyp_virt_to_phys` / `hyp_virt_to_page`. This covers the large
-  EL2-private objects — `pkvm_hyp_vm`, `pkvm_hyp_vcpu`, and the embedded
+  EL2-private objects, `pkvm_hyp_vm`, `pkvm_hyp_vcpu`, and the embedded
   `hyp_vm->kvm` (see §State Divergence & Initialization Boundaries, "Hyp vs. Host
   Back-Pointer").
 
 So the real split is **linear-map** (carries the tag → `kern_hyp_va` is a no-op)
 vs **private-VA-range** (no tag → mangled), not above/below `PAGE_OFFSET`.
 
-Idempotence does NOT extend to an EL2 **private-VA-range** pointer — the output
+Idempotence does NOT extend to an EL2 **private-VA-range** pointer, the output
 of `pkvm_alloc_private_va_range` (`nvhe/mm.c`): `hyp_vmemmap`, the fixmap,
 ioremap/MMIO mappings, hyp stacks. These live outside the linear map and do not
 carry the hyp tag, so the mask relocates them and the *first* application
@@ -338,9 +338,9 @@ a linear-map object). Do not escalate any of these to memory corruption or a dat
 abort; at most note the redundant call.
 
 **Do NOT flag:**
-- A redundant or double `kern_hyp_va()` on a linear-map pointer — a host
+- A redundant or double `kern_hyp_va()` on a linear-map pointer, a host
   kernel-linear pointer, its hyp image, or any EL2 object reachable by
-  `hyp_virt_to_phys` / `hyp_virt_to_page` (e.g. `&hyp_vm->kvm`) — as corruption,
+  `hyp_virt_to_phys` / `hyp_virt_to_page` (e.g. `&hyp_vm->kvm`), as corruption,
   a fault, or any severity bug. It is a no-op; at most a cleanup note, since a
   redundant `kern_hyp_va()` obscures the host→EL2 boundary each call site marks.
 
@@ -348,24 +348,24 @@ abort; at most note the redundant call.
 
 EL2 uses a private buddy allocator (`struct hyp_pool` in
 `arch/arm64/kvm/hyp/include/nvhe/gfp.h`, implementation in
-`nvhe/page_alloc.c`). It is the *only* page allocator available at EL2 — there
+`nvhe/page_alloc.c`). It is the *only* page allocator available at EL2, there
 is no `kmalloc`, no `alloc_pages`. There is one global pool (`hpool`, set up
 in `__pkvm_init_finalise`) plus one per protected VM (`hyp_vm->pool`).
 
 **API** (all symbols are EL2-only; do not confuse with the host page
 allocator):
 
-*   `hyp_alloc_pages(pool, order)` — returns a refcount=1 page; NULL on OOM.
+*   `hyp_alloc_pages(pool, order)`, returns a refcount=1 page; NULL on OOM.
     Pages are zeroed.
-*   `hyp_get_page(pool, addr)` — increments refcount.
-*   `hyp_put_page(pool, addr)` — decrements; on last ref the page is **zeroed
+*   `hyp_get_page(pool, addr)`, increments refcount.
+*   `hyp_put_page(pool, addr)`, decrements; on last ref the page is **zeroed
     and reattached to the buddy tree**. (Zeroing happens on free, not on
     alloc.)
-*   `hyp_split_page(page)` — break a high-order block into
+*   `hyp_split_page(page)`, break a high-order block into
     individually-refcounted order-0 pages; each must be put separately.
-*   `hyp_pool_init(pool, pfn, nr_pages, reserved_pages)` — `reserved_pages`
+*   `hyp_pool_init(pool, pfn, nr_pages, reserved_pages)`, `reserved_pages`
     are kept at refcount 1 and never enter the free tree.
-*   `hyp_page_count(addr)` — returns the current refcount of the page.
+*   `hyp_page_count(addr)`, returns the current refcount of the page.
 
 **Invariants:**
 
@@ -382,13 +382,13 @@ allocator):
     allocated from. Mixing `hpool` with a per-VM pool corrupts both.
 *   **External pages:** `__hyp_attach_page` accepts pages outside
     `[range_start, range_end)` and inserts them at order 0 without coalescing
-    — used for host donations. "Freed page is not in the pool's range" is
+   , used for host donations. "Freed page is not in the pool's range" is
     therefore not by itself a bug.
 
 **REPORT as bugs:**
 
 *   Touching `page->refcount` or `page->order` without `pool->lock`.
-*   Treating `hyp_alloc_pages()` failure as fatal (`WARN_ON` / `BUG_ON`) —
+*   Treating `hyp_alloc_pages()` failure as fatal (`WARN_ON` / `BUG_ON`) , 
     `-ENOMEM` is a normal runtime outcome.
 *   Allocating from one pool and freeing into another.
 
@@ -556,16 +556,16 @@ Because the per-entry set is an allowlist, **both directions are bugs**:
 EL2 switches FPSIMD/SVE/SME state lazily: the first guest access to FP/SIMD/SVE
 traps to `kvm_hyp_handle_fpsimd()` (`hyp/switch.h`), which deactivates the
 relevant CPTR traps, saves the live host context, and restores the guest
-context. How the *host's* state is preserved diverges by **KVM mode** — whether
+context. How the *host's* state is preserved diverges by **KVM mode**, whether
 pKVM is enabled (`is_protected_kvm_enabled()`), NOT by whether the individual
-guest is a protected pVM — and under pKVM that divergence is a confidentiality
+guest is a protected pVM, and under pKVM that divergence is a confidentiality
 invariant, not a performance tweak:
 
 - **pKVM enabled (`is_protected_kvm_enabled()`):** the trap handler eagerly
   saves the host's FP/SVE state *in the hyp*, gated on
   `is_protected_kvm_enabled() && host_owns_fp_regs()`
   (`kvm_hyp_save_fpsimd_host()`). The gate is the global mode, so this applies
-  to **every** guest the hyp runs — protected pVMs and non-protected guests
+  to **every** guest the hyp runs, protected pVMs and non-protected guests
   alike (all of which take the `is_protected_kvm_enabled()` branch of
   `handle___kvm_vcpu_run`, i.e. `flush_hyp_vcpu` / `sync_hyp_vcpu`). The hyp
   owns host-state save/restore here "as not to reveal that fpsimd was used by a
@@ -609,10 +609,10 @@ check is applied at the seam the requirement actually names.
 | Seam | Function(s) | Cadence | Handles |
 | :--- | :--- | :--- | :--- |
 | **Per-load** | `handle___pkvm_vcpu_load` (calls `pkvm_load_hyp_vcpu`) | Once, when the host's `KVM_RUN` loads a vCPU onto a physical CPU | Coarse configuration that persists across many entries (e.g. the `arch.fgt` block copy for non-protected guests) |
-| **Per-entry** | `flush_hyp_vcpu` (and the matching `sync_hyp_vcpu` on exit) | Every guest re-entry — potentially thousands of times between loads | Fine-grained per-entry state churn (e.g. `hcr_el2`, `mdcr_el2`, `arch.iflags`) |
+| **Per-entry** | `flush_hyp_vcpu` (and the matching `sync_hyp_vcpu` on exit) | Every guest re-entry, potentially thousands of times between loads | Fine-grained per-entry state churn (e.g. `hcr_el2`, `mdcr_el2`, `arch.iflags`) |
 
-Before flagging a "missing sync," quote the guideline's *exact* cadence word —
-"on each vCPU **load**" vs "on each **entry**" / "**run**" — and confirm the
+Before flagging a "missing sync," quote the guideline's *exact* cadence word , 
+"on each vCPU **load**" vs "on each **entry**" / "**run**", and confirm the
 check is against the matching function. A copy the requirement places at vCPU
 load is satisfied even when it is absent from the per-entry path, and vice
 versa.
@@ -669,24 +669,24 @@ failure mode from normal page faults.
 At EL2 in nVHE/pKVM, both `BUG_ON()` and `WARN_ON()` expand to `BRK` (via
 `__BUG_FLAGS` in `arch/arm64/include/asm/bug.h`), which the hyp panic handler
 treats as fatal. There is no "warn and continue" semantics for these macros at
-EL2 — code after a triggered `WARN_ON` is unreachable. The rule below applies
+EL2, code after a triggered `WARN_ON` is unreachable. The rule below applies
 to any EL2 invocation whose expansion ultimately reaches that `BRK`; if a
 patch uses a warning primitive that does not, the rule does not apply.
 
 **Test for any `WARN_ON(cond)` at EL2: can `cond` evaluate true through any
-contract-permitted input — or only through a violation of EL2's own
+contract-permitted input, or only through a violation of EL2's own
 invariants?**
 
 *   *Through contracted inputs* (`WARN_ON` wrong): host-supplied input
     post-de-privilege, allocator/lookup outcomes, hardware/firmware return
     values, concurrency races, anything timeout/poll-driven.
 *   *Only through invariant violation* (`WARN_ON` correct): values from EL2's
-    own just-completed state — a slot EL2 just populated being NULL, a
+    own just-completed state, a slot EL2 just populated being NULL, a
     refcount EL2 just incremented being zero, an internal data structure EL2
     just initialized being inconsistent.
 
 If a separate bug elsewhere makes an EL2-internal invariant violatable (e.g.,
-a slot left NULL by a different lifecycle bug), flag *that* bug — do not
+a slot left NULL by a different lifecycle bug), flag *that* bug, do not
 demote the local `WARN_ON`. `WARN_ON` defends the invariant; chaining "the
 invariant might be broken elsewhere" into "therefore this assertion is wrong"
 defeats its purpose.
@@ -698,7 +698,7 @@ Model and Scope. A host-kernel-only reachable wrong `WARN_ON` is a hardening
 improvement. A guest- or host-userspace-reachable one is a bug.
 
 **Dead-branch trap:** patterns like `WARN_ON(err); do_fallback();` or `if
-(WARN_ON(err)) goto out;` at EL2 do NOT execute the recovery path — the WARN
+(WARN_ON(err)) goto out;` at EL2 do NOT execute the recovery path, the WARN
 path panics. The error-handling code is dead. Reviewers familiar with
 host-side `WARN_ON` semantics routinely miss this.
 
@@ -713,13 +713,13 @@ Plain `BUG()` (not just `BUG_ON()`) at EL2 nvhe expands to `BRK BUG_BRK_IMM`.
 That instruction is caught by the EL2 exception vector
 (`kvm_unexpected_el2_exception`), which calls
 `__guest_exit_restore_elr_and_panic`, which calls `hyp_panic()`. `BUG()` and a
-direct `hyp_panic()` call are therefore functionally equivalent at EL2 — both
+direct `hyp_panic()` call are therefore functionally equivalent at EL2, both
 terminate with a hyp panic, no return.
 
 The prevailing convention in `arch/arm64/kvm/hyp/nvhe/` is `BUG()`: 6 call
 sites across the `*.c` files (4 in `hyp-main.c` alone) versus 2 direct
 `hyp_panic()` call sites. **Do not flag a `BUG()` ↔ `hyp_panic()` substitution
-as a regression** — neither form is more or less correct than the other, and
+as a regression**, neither form is more or less correct than the other, and
 `BUG()` is the house style.
 
 ## Quick Checks

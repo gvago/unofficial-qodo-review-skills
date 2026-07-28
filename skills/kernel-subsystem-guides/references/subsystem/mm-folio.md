@@ -242,7 +242,7 @@ is already unmapped by that point.
   (`const_folio_flags()` asserts not-tail). `folio_try_get()` must precede
   flag tests in speculative lookups; `folio_get()` must precede `set_pte_at()`
 - **Compound page tail pages**: page-cache fields (`mapping`, `index`,
-  `private`) share a union with `compound_head` in tail pages — accessing
+  `private`) share a union with `compound_head` in tail pages, accessing
   them on a tail page returns garbage silently. Call `compound_head()` or
   `page_folio()` first. The folio API avoids this entirely
 - **`folio_page()` vs PTE-mapped subpage**: `folio_page(folio, 0)` returns the
@@ -271,7 +271,7 @@ is already unmapped by that point.
 - **`_mapcount` +1 bias convention**: `_mapcount` is initialized to -1
   (zero mappings); logical mapcount = `_mapcount + 1`. All accessors
   (`folio_mapcount()`, etc.) add 1. When code reads `_mapcount` directly,
-  verify the consumer expects raw (-1 based) or logical (0 based) — a
+  verify the consumer expects raw (-1 based) or logical (0 based), a
   mismatch is an off-by-one masked by range checks
 - **Refcount as semantic state**: `page_count()`/`folio_ref_count()` are
   lifetime counters, not semantic indicators. Speculative references (GUP,
@@ -284,7 +284,7 @@ is already unmapped by that point.
   `folio_unlock()` instead
 - **Page/folio access after failed refcount drop**: when
   `put_page_testzero()`/`folio_put_testzero()` returns false, the caller has
-  no reference — another CPU may free the page immediately. Any access after
+  no reference, another CPU may free the page immediately. Any access after
   the failed testzero is use-after-free. Save needed metadata (flags, order,
   tags) **before** the refcount drop. See `___free_pages()` for the pattern
 - **`folio->mapping` NULL for non-anonymous folios**: `folio->mapping` is
@@ -332,7 +332,7 @@ is already unmapped by that point.
   without splitting the large entry silently loses data. See
   `shmem_split_large_entry()` in `mm/shmem.c`
 - **`kmap_local_page()` maps only a single page**: on CONFIG_HIGHMEM,
-  accessing beyond `PAGE_SIZE` from the returned address faults — adjacent
+  accessing beyond `PAGE_SIZE` from the returned address faults, adjacent
   pages in a high-order allocation are not mapped. Silent on 64-bit (direct
   map is contiguous). For multi-page access, iterate with
   `kmap_local_page(page + i)`. `kmap_local_folio()` also maps one page only

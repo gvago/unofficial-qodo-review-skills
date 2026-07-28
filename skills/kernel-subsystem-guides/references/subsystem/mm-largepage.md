@@ -336,7 +336,7 @@ split, migration, KSM, or compaction without hwpoison checks.
 - **`try_to_unmap()` on PMD-mapped large folios**: requires
   `TTU_SPLIT_HUGE_PMD` flag, otherwise `VM_BUG_ON_FOLIO(!pvmw.pte, folio)` fires in
   `try_to_unmap_one()`. Wrappers like `unmap_poisoned_folio()` do NOT set
-  this flag — callers must guarantee not a large folio (except hugetlb)
+  this flag, callers must guarantee not a large folio (except hugetlb)
 - **`pmd_trans_huge()` matches both THP and hugetlb PMDs**: check
   `is_vm_hugetlb_page(vma)` first before THP-specific operations
   (`split_huge_pmd()`, `pgtable_trans_huge_withdraw()`). Hugetlb uses

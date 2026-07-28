@@ -168,17 +168,17 @@ safety semantics or causing unexpected traps.
   Synchronization Event (CSE) is needed is keyed to *how* the new value is next
   used (Arm ARM DDI 0487, D24.1.2.2, Table D24-1, for two accesses to the same
   register):
-    - **Direct read-back — an `MRS` of the register just written — needs no
+    - **Direct read-back, an `MRS` of the register just written, needs no
       CSE.** A direct write is ordered before a later direct read of the same
       register with no synchronization ("Direct write -> Direct read: None"),
       so the read-back returns the written value. (Exception: a set/clear
       register (`*_SET`/`*_CLR`, e.g. `PMOVSSET_EL0`); the spec defines its
       write *effect* as an indirect write, so a read-back needs a CSE
-      — "Indirect write -> Direct read: Required". Ordinary RW trap/control
+     , "Indirect write -> Direct read: Required". Ordinary RW trap/control
       registers are not set/clear.)
-    - **Indirect read — the register's *effect* governing a later instruction
+    - **Indirect read, the register's *effect* governing a later instruction
       (a trap taking effect, a translation using a new `TTBR`/`TCR`, an FP
-      instruction gated by `CPTR`) — requires a CSE** between the write and
+      instruction gated by `CPTR`), requires a CSE** between the write and
       that instruction ("Direct write -> Indirect read: Required"), unless the
       register/field is self-synchronizing (see below).
   A read-back confirms the *stored value*; it does not confirm the *effect* is
@@ -198,10 +198,10 @@ safety semantics or causing unexpected traps.
   `ERET`, so nothing in-context relies on the new value and guest entry is the
   CSE. Writing it to *deactivate* those traps so **EL2 itself** may touch
   FP/SVE, by contrast, requires an `isb()` after that write and before EL2's
-  FP/SVE access — an in-context indirect read (upstream `257d0aa8e250` added
+  FP/SVE access, an in-context indirect read (upstream `257d0aa8e250` added
   exactly that barrier to fix a host SVE-trap crash). Identical register,
   opposite requirement, decided by the consumer.
-- **Counter-exception — a value the `ERET` itself indirectly consumes.** An
+- **Counter-exception, a value the `ERET` itself indirectly consumes.** An
   `ERET` does not cover every preceding write. Some `HCR_EL2` fields are read
   by the `ERET` while it constructs the target context, so their new value is
   relied upon *before* the `ERET`'s own synchronization point; those need an
@@ -231,10 +231,10 @@ safety semantics or causing unexpected traps.
       flags this in the field description with wording of the form "an indirect
       read of `<REG>.<FIELD>` appears to occur in program order relative to a
       direct write of the same register, without the need for explicit
-      synchronization." Recognize this class by that wording — do not assume
+      synchronization." Recognize this class by that wording, do not assume
       every sysreg either always needs an `isb()` or never does.
     - **`FPMR`** (FP8 mode register, `SYS_FPMR`): self-synchronizing at *register*
-      granularity — "a direct or indirect read of this register occurs in program
+      granularity, "a direct or indirect read of this register occurs in program
       order relative to a direct write of this register without explicit
       synchronization" (Arm ARM C5.2.9, Configuration). No `isb()` is needed
       between an `FPMR` write and a following FP8 instruction. Its wording omits
@@ -244,12 +244,12 @@ safety semantics or causing unexpected traps.
       a separate guarantee in the GIC architecture, *not* by the sysreg wording
       above. After the write is architecturally executed, no interrupt below the
       new priority is taken, without requiring an `isb()` or exception boundary. Same
-      no-`isb()` outcome, different mechanism — so do not expect to find the
+      no-`isb()` outcome, different mechanism, so do not expect to find the
       "indirect read ... in program order" wording on it. This no-`isb()`
       guarantee is the *masking* direction (writing `ICC_PMR_EL1` to block
       lower-priority interrupts, as on `local_irq_disable()`). The *unmasking*
       direction (relaxing the mask to admit them again, as on
-      `local_irq_enable()`) does need a barrier — `pmr_sync()`, a `dsb` gated on
+      `local_irq_enable()`) does need a barrier, `pmr_sync()`, a `dsb` gated on
       `ICC_CTLR_EL1.PMHE` (boot-time-patched to a nop when `PMHE == 0`, and
       compiled out entirely without `CONFIG_ARM64_PSEUDO_NMI`), never an `isb()`.
       So do not read this as "`ICC_PMR_EL1` writes never need synchronization":
@@ -295,13 +295,13 @@ safety semantics or causing unexpected traps.
   upon: guest trap/enable bits set on `vcpu_load` or the world-switch path (e.g.
   the `CNTHCTL_EL2` `EL1*` guest bits written in `timer_set_traps()`, `CPTR_EL2`
   when *activating* guest traps), or `FPEXC32_EL2` (relevant only to an AArch32
-  guest; the guest-entry `ERET` synchronizes it — upstream `b1a9a9b96169`
+  guest; the guest-entry `ERET` synchronizes it, upstream `b1a9a9b96169`
   removed the redundant `isb()`). Judge by the consumer, not the register name.
   (This assumes the boundary is a CSE, i.e. not the `FEAT_ExS` +
   `SCTLR_ELx.EOS`/`EIS == 0` case above.) Beware the same register on a
   different path: under VHE the `CNTHCTL_EL2` `EL0*` bits (`EL0PCTEN` etc.,
   gated by `HCR_EL2.TGE == 1`) govern the *host's own* EL0, an in-context
-  consumer — a write the host relies on without an intervening `ERET` does need
+  consumer, a write the host relies on without an intervening `ERET` does need
   synchronization. Same register, opposite answer, per the consumer.
 - A missing `isb()` after a write to a self-synchronizing register/field
   (`ZCR_ELx.LEN`, `SMCR_ELx.LEN`, `FPMR`, or `ICC_PMR_EL1` on the mask path);
@@ -323,8 +323,8 @@ responsibility, not a tooling one.
 lines in that register's `.sysreg` block (`gen-sysreg.awk`); it has no concept
 of features and defaults to `UL(0)` when the block declares no `Res1` bit. So a
 `.sysreg` edit that reclassifies a bit between `Res1 N` and `Field N` (or
-`Res0`) — adding a newly architected RES1 bit, or turning an existing RES1 bit
-into a writable field — silently changes the *value* of `<REG>_RES1` while its
+`Res0`), adding a newly architected RES1 bit, or turning an existing RES1 bit
+into a writable field, silently changes the *value* of `<REG>_RES1` while its
 *name* stays put. `SCTLR_EL2_RES1` is a live consumer: today it expands to
 `UL(0)` and is OR'd into the EL2 SCTLR init values `INIT_SCTLR_EL2_MMU_ON` /
 `INIT_SCTLR_EL2_MMU_OFF` (`arch/arm64/include/asm/sysreg.h`). If a future
@@ -332,14 +332,14 @@ into a writable field — silently changes the *value* of `<REG>_RES1` while its
 init values would change with no edit at the consuming macro and no compiler or
 CI signal.
 
-Do not look to the generated mask for feature conditionality — it is not there.
+Do not look to the generated mask for feature conditionality, it is not there.
 "RES1 only when a feature is absent" (e.g. `SCTLR_ELx.{EIS, EOS}` are RES1 when
 `FEAT_ExS` is unimplemented) lives in KVM's runtime feature map, tagged
 `AS_RES1` ("RES1 when not supported") in `arch/arm64/kvm/config.c`, not in
 `<REG>_RES1`. And do not pin the check to an init macro's *current* contents
 either: both the value of a `_RES1` aggregate and the explicit field-macro terms
 an init ORs in (e.g. `SCTLR_ELx_EIS` / `SCTLR_ELx_EOS`) drift between releases.
-`INIT_SCTLR_EL2_MMU_ON` is a live example — it set neither `EIS` nor `EOS` in one
+`INIT_SCTLR_EL2_MMU_ON` is a live example, it set neither `EIS` nor `EOS` in one
 release and forces both, via the field macros, in a later one. Read the consuming
 init at the revision under review, not from memory.
 
@@ -350,7 +350,7 @@ init at the revision under review, not from memory.
   change alters, then enumerate the C call-sites that consume those macros and
   inspect each.
 - **Action.** Raise an Open Question / Tension asking the author to confirm the
-  consuming C does not rely on the *previous* semantic value of the mask — in
+  consuming C does not rely on the *previous* semantic value of the mask, in
   particular, code that ORs `<REG>_RES1` into an initial register value
   expecting specific bits to be set.
 
@@ -520,7 +520,7 @@ register state or performing incorrect state merges.
   relied upon.
 - **TLBI Range Operands:** Range-based invalidation (e.g., `TLBI RVAE1IS`)
   requires correct `SCALE` and `NUM` encoding. If `TG` does not match the
-  current granule, the TLBI is CONSTRAINED UNPREDICTABLE — possibly including
+  current granule, the TLBI is CONSTRAINED UNPREDICTABLE, possibly including
   no invalidation.
 - **PTE Barrier Batching:** Batching DSB/ISB across multiple kernel-mapping
   PTE updates is only correct in contexts that cannot be interrupted

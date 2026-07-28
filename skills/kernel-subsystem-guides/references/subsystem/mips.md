@@ -4,7 +4,7 @@
 
 Using content-addressed TLB operations during early initialization can trigger
 TLB shutdown (machine check exception) on multiple MIPS CPU families. TLB
-shutdown sets the `ST0_TS` bit in `CP0_Status` and is fatal — the processor
+shutdown sets the `ST0_TS` bit in `CP0_Status` and is fatal, the processor
 halts and the kernel's `do_mcheck()` handler in `arch/mips/kernel/traps.c`
 cannot recover.
 
@@ -26,15 +26,15 @@ collisions.
 
 | Operation | Instruction | Safety During Init |
 |-----------|-------------|-------------------|
-| Indexed read | `TLBR` via `tlb_read()` | Safe — reads entry by index |
+| Indexed read | `TLBR` via `tlb_read()` | Safe, reads entry by index |
 | Indexed write | `TLBWI` via `tlb_write_indexed()` | Unsafe if it creates a duplicate entry |
-| Content probe | `TLBP` via `tlb_probe()` | Unsafe — may shutdown on duplicates |
+| Content probe | `TLBP` via `tlb_probe()` | Unsafe, may shutdown on duplicates |
 | Random write | `TLBWR` via `tlb_write_random()` | Unsafe if it creates a duplicate entry |
 
 **Safe initialization pattern:**
 
 The kernel's `r4k_tlb_uniquify()` in `arch/mips/mm/tlb-r4k.c` demonstrates the
-correct approach — read all entries by index first, detect duplicates in
+correct approach, read all entries by index first, detect duplicates in
 software, then overwrite duplicates with unique values using indexed writes
 that cannot create new collisions:
 
@@ -57,7 +57,7 @@ for (i = 0; i < tlbsize; i++) {
     existing_vpns[i] = read_c0_entryhi() & vpn_mask;
 }
 // Detect duplicates in software, then overwrite with unique values
-// using tlb_write_indexed() — safe because each write removes a duplicate
+// using tlb_write_indexed(), safe because each write removes a duplicate
 ```
 
 TLB instruction wrappers (`tlb_read()`, `tlb_write_indexed()`, `tlb_probe()`,

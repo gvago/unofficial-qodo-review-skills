@@ -1,6 +1,6 @@
 ---
 name: kernel-driver-hardware
-description: "Use when a Linux kernel PR diff touches driver hardware interaction \u2014 register access, DMA mapping, memory barriers, IRQ handlers, device power/state machines (Sashiko stage 7). Skip for purely generic software logic (VFS, core networking). Part of the linux-kernel-review suite."
+description: "Use when a Linux kernel PR diff touches driver hardware interaction, register access, DMA mapping, memory barriers, IRQ handlers, device power/state machines (Sashiko stage 7). Skip for purely generic software logic (VFS, core networking). Part of the linux-kernel-review suite."
 license: Apache-2.0
 metadata:
   author: Sashiko contributors / Chris Mason
@@ -15,7 +15,7 @@ metadata:
 Lens for hardware-facing driver review (Sashiko stage 7). A hardware
 engineer's read of register access, DMA, and device state machines. If the
 diff is purely generic software logic (VFS, core networking), this lens
-returns no findings — say so and stop.
+returns no findings, say so and stop.
 
 ## How to apply
 
@@ -50,11 +50,11 @@ returns no findings — say so and stop.
 - category: Correctness.
 - evidence: the register/DMA/IRQ operation, the device state at that point,
   and why the ordering or state is wrong. Cite the datasheet constraint
-  only as stated in the code/comments — do not invent hardware behavior.
+  only as stated in the code/comments, do not invent hardware behavior.
 
 ## What NOT to flag
 
-- Generic software logic — return no findings for non-hardware diffs.
+- Generic software logic, return no findings for non-hardware diffs.
 - Barrier "hardening" where existing locks already order the accesses.
 - Delay-length tuning without evidence the current value fails.
 

@@ -29,7 +29,7 @@
 | Tasks RCU | (implicit) | N/A |
 | Tasks Trace RCU | `rcu_read_lock_trace()` / `rcu_read_unlock_trace()` | Yes |
 
-Tasks RCU has no explicit read-side lock — any code that does not voluntarily
+Tasks RCU has no explicit read-side lock, any code that does not voluntarily
 context-switch is implicitly in a read-side critical section.
 
 ## Quick Checks
@@ -42,21 +42,21 @@ context-switch is implicitly in a read-side critical section.
 
 Objects must be removed from RCU-protected data structures before calling
 `call_rcu()` or `synchronize_rcu()`. This is because `call_rcu()` only waits
-for readers that existed when it was called — it provides no protection against
+for readers that existed when it was called, it provides no protection against
 readers that start after the grace period begins. If the object is still linked
 in the data structure, new readers can find it and access it after it is freed.
 
 The correct sequence:
 
-1. Remove from data structure — prevents new readers from finding the object
-2. `call_rcu()` or `synchronize_rcu()` — waits for existing readers to finish
-3. Free the resource — in the callback or after `synchronize_rcu()` returns
+1. Remove from data structure, prevents new readers from finding the object
+2. `call_rcu()` or `synchronize_rcu()`, waits for existing readers to finish
+3. Free the resource, in the callback or after `synchronize_rcu()` returns
 
 Use the appropriate RCU-aware removal helpers: `hlist_del_rcu()`,
 `list_del_rcu()`, `rhashtable_remove_fast()`, etc.
 
 ```c
-// WRONG — removal after call_rcu causes use-after-free
+// WRONG, removal after call_rcu causes use-after-free
 call_rcu(&obj->rcu, free_callback);
 
 void free_callback(struct rcu_head *rhp) {
@@ -67,7 +67,7 @@ void free_callback(struct rcu_head *rhp) {
 ```
 
 ```c
-// CORRECT — remove first, then defer freeing
+// CORRECT, remove first, then defer freeing
 hlist_del_rcu(&obj->node);         // No new readers can find it
 call_rcu(&obj->rcu, free_callback);
 
@@ -87,7 +87,7 @@ performs the removal inside the RCU callback rather than before it.
 under `raw_spinlock_t` (`pi_lock` in kernel/sched/core.c) and from hardirq
 context. Adding `spinlock_t`, `local_lock`, or `local_trylock` acquisition
 in `kvfree_call_rcu()` or its callees causes a lockdep `Invalid wait context`
-warning — `!IS_ENABLED(CONFIG_PREEMPT_RT)` guards do not prevent this because
+warning, `!IS_ENABLED(CONFIG_PREEMPT_RT)` guards do not prevent this because
 `CONFIG_PROVE_RAW_LOCK_NESTING` (default `y`) checks declared wait-types, not
 runtime behavior.
 
