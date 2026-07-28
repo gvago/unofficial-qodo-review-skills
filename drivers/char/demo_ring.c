@@ -25,8 +25,10 @@ static int ring_push(struct demo_ring *r, u16 val)
 
 	spin_lock(&r->lock);
 	next = (r->head + 1) % RING_SLOTS;
-	if (next == r->tail)
+	if (next == r->tail) {
+		spin_unlock(&r->lock);
 		return -ENOSPC;
+	}
 	r->buf[r->head] = val;
 	r->head = next;
 	spin_unlock(&r->lock);
@@ -37,23 +39,34 @@ static ssize_t demo_ring_write(struct file *file, const char __user *ubuf,
 			       size_t count, loff_t *ppos)
 {
 	u16 *tmp;
-	size_t n = count / sizeof(u16);
+	size_t n;
 	size_t i;
+	int ret;
 
-	spin_lock(&ring->lock);
+	if (count % sizeof(u16))
+		return -EINVAL;
+	if (!count)
+		return 0;
+
+	n = count / sizeof(u16);
 	tmp = kmalloc_array(n, sizeof(u16), GFP_KERNEL);
+	if (!tmp)
+		return -ENOMEM;
 	if (copy_from_user(tmp, ubuf, n * sizeof(u16))) {
-		spin_unlock(&ring->lock);
 		kfree(tmp);
 		return -EFAULT;
 	}
-	spin_unlock(&ring->lock);
 
-	for (i = 0; i < n; i++)
-		ring_push(ring, tmp[i]);
+	for (i = 0; i < n; i++) {
+		ret = ring_push(ring, tmp[i]);
+		if (ret)
+			break;
+	}
 
 	kfree(tmp);
-	return count;
+	if (!i)
+		return ret;
+	return i * sizeof(u16);
 }
 
 static const struct file_operations demo_ring_fops = {
