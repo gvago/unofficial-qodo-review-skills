@@ -35,6 +35,7 @@ That means a review skill must:
 |-------|---------|
 | [`terraform-review`](skills/terraform-review/SKILL.md) | Flags Terraform/OpenTofu diff issues: identity churn (missing `moved` blocks, `count` index churn), secrets that land in state, unsafe destroy/state ops, version-floor violations, backend antipatterns. Adapted from [antonbabenko/terraform-skill](https://github.com/antonbabenko/terraform-skill) (Apache-2.0). |
 | [`apex-review`](skills/apex-review/SKILL.md) | Flags Salesforce Apex/SOQL diff issues: governor-limit killers (SOQL/DML in loops), missing CRUD/FLS & sharing enforcement, SOQL injection, hardcoded IDs, trigger anti-patterns. Rules derived from the [PMD Apex ruleset](https://github.com/pmd/pmd) (BSD-2). For *writing* SF code, see Salesforce's official [sf-skills](https://github.com/forcedotcom/sf-skills). |
+| [`clang-format`](skills/clang-format/SKILL.md) | Reviews changed C/C++ formatting against the repository's committed `.clang-format`, cites stable local `CF-*` rule IDs and exact rule text, and does not claim formatter execution. Adapted from [Jamie-BitFlight/claude_skills](https://github.com/Jamie-BitFlight/claude_skills/tree/main/plugins/clang-format/skills/clang-format) (MIT). |
 | [`linux-kernel-review`](skills/linux-kernel-review/SKILL.md) *(suite)* | Linux kernel patch review: one orchestrator plus eight lens skills covering change intent, execution flow, resource lifecycle, locking/concurrency, security, driver/hardware, per-subsystem invariants, and a false-positive/severity gate. Adapted from [Sashiko](https://github.com/sashiko-dev/sashiko)'s review protocol (Apache-2.0) and [masoncl/review-prompts](https://github.com/masoncl/review-prompts) (MIT). See below. |
 
 ### The `linux-kernel-review` suite
@@ -83,6 +84,12 @@ cp -R /tmp/uqrs/skills/terraform-review skills/terraform-review
 **Anton Babenko** (Apache-2.0). The original is a *coding* skill; this variant flips the
 contract and rule framing toward *reviewing a diff*. Reference files under
 `skills/terraform-review/references/` are reproduced from the source under the same license.
+
+`clang-format` is a PR-review adaptation of the
+[**clang-format skill**](https://github.com/Jamie-BitFlight/claude_skills/tree/main/plugins/clang-format/skills/clang-format)
+by **Jamie-BitFlight** (MIT). It converts the original configuration and tooling workflow
+into a diff-only Qodo review lens. Bundled reference and template files are reproduced under
+the upstream MIT license.
 
 The `linux-kernel-review` suite adapts the review protocol of
 [**Sashiko**](https://github.com/sashiko-dev/sashiko) (Linux Foundation, Apache-2.0) , 
