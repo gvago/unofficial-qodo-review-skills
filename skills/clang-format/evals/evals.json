@@ -1,0 +1,23 @@
+{
+  "skill_name": "clang-format",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Analyze the existing formatting policy for this Zephyr repository. Explain which config is authoritative and how you would validate it without changing source files.",
+      "expected_output": "Identifies the root .clang-format as authoritative, does not run or claim any CLI tool, reasons from representative macro-heavy C changes, and does not propose formatting the whole tree.",
+      "files": [".clang-format"]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this C change for formatting only. Do not include semantic, correctness, safety, or architecture findings.",
+      "expected_output": "Limits the response to formatting behavior supported by the discovered .clang-format, respects clang-format off/on regions, emits no semantic findings, and includes Rule ID, exact Rule text, changed path/line, reason, and fix for each finding. If no target diff or C file is supplied, asks for that input instead of inventing findings.",
+      "files": [".clang-format"]
+    },
+    {
+      "id": 3,
+      "prompt": "clang-format changes the layout of one Zephyr macro invocation unexpectedly. Troubleshoot that focused problem without editing the root config or reformatting unrelated files.",
+      "expected_output": "Does not run clang-format, inspects the committed config and diff, maps the issue to a stable CF-* Rule ID with exact Rule text, checks macro-sensitive options such as ForEachMacros, IfMacros, AttributeMacros, and WhitespaceSensitiveMacros, checks clang-format off/on boundaries, and proposes only a focused reasoning-based fix.",
+      "files": [".clang-format"]
+    }
+  ]
+}
