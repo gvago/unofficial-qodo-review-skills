@@ -73,12 +73,13 @@ Every finding must include all of these fields:
 
 If no Rule ID and exact Rule text can be established, do not report a clang-format rule violation.
 
-## Rule index for the Zephyr configuration
+## Rule index for the repository configuration
 
 These IDs are a local review adaptation because the source `.clang-format` has no rule IDs.
 The quoted text is the source rule text and must be preserved in findings.
 
 - **CF-001**: `BreakBeforeBraces: Linux`
+- **CF-001 semantics**: function, type, and namespace opening braces go on the next line. Control-statement braces stay on the same line. Never report an attached `if`, `for`, `while`, or `switch` brace as a CF-001 violation.
 - **CF-002**: `ColumnLimit: 100`
 - **CF-003**: `ContinuationIndentWidth: 8`
 - **CF-004**: `IndentCaseLabels: false`
@@ -118,4 +119,4 @@ Integration examples are:
 
 ## Reporting
 
-State the authoritative config, changed file and line, Rule ID, exact Rule text, evidence, and fix. Do not claim that clang-format or another CLI ran. Separate formatting findings from semantic review.
+State the authoritative config, changed file and line, Rule ID, exact Rule text, evidence, and fix. Use the Maintainability category for formatting-only findings. Do not claim that clang-format or another CLI ran. Separate formatting findings from semantic review.
