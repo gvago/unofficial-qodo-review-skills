@@ -1,0 +1,6 @@
+---
+BasedOnStyle: LLVM
+BreakBeforeBraces: Linux
+IndentWidth: 8
+SpaceBeforeParens: ControlStatementsExceptControlMacros
+---
