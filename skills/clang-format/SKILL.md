@@ -53,10 +53,10 @@ Review C and C++ formatting from the unified diff and the repository's committed
 - Complete CLI reference: `references/complete/clang-format-cli.md`
 - Complete style-options reference: `references/complete/clang-format-style-options.md`
 
-## Zephyr and Qodo review guidance
+## Repository-specific review guidance
 
-- The root `.clang-format` is authoritative for this Zephyr snapshot. Inspect it rather than substituting `assets/configs/linux-kernel.clang-format` or another generic template.
-- Zephyr C is macro-heavy. Include representative headers and source files with `ForEachMacros`, `IfMacros`, `AttributeMacros`, and `WhitespaceSensitiveMacros` behavior when validating configuration changes.
+- The repository's `.clang-format` is authoritative for reviewed C and C++ files. Inspect it rather than substituting `assets/configs/linux-kernel.clang-format` or another generic template.
+- For macro-heavy C, include representative headers and source files with `ForEachMacros`, `IfMacros`, `AttributeMacros`, and `WhitespaceSensitiveMacros` behavior when validating configuration changes.
 - Respect `// clang-format off` and `// clang-format on` regions. Do not remove markers or treat intentionally preserved layout inside them as a formatting defect.
 - Validate a focused change on representative files and inspect the diff for macro damage, preprocessor movement, include changes, and excessive churn.
 - In Qodo review, report formatting findings only when they are in scope and supported by the authoritative config. Route semantic C concerns to the appropriate semantic review skill instead of attaching them to clang-format findings.
