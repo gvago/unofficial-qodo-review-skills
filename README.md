@@ -37,6 +37,8 @@ That means a review skill must:
 | [`apex-review`](skills/apex-review/SKILL.md) | Flags Salesforce Apex/SOQL diff issues: governor-limit killers (SOQL/DML in loops), missing CRUD/FLS & sharing enforcement, SOQL injection, hardcoded IDs, trigger anti-patterns. Rules derived from the [PMD Apex ruleset](https://github.com/pmd/pmd) (BSD-2). For *writing* SF code, see Salesforce's official [sf-skills](https://github.com/forcedotcom/sf-skills). |
 | [`clang-format`](skills/clang-format/SKILL.md) | Reviews changed C/C++ formatting against the repository's committed `.clang-format`, cites stable local `CF-*` rule IDs and exact rule text, and does not claim formatter execution. Adapted from [Jamie-BitFlight/claude_skills](https://github.com/Jamie-BitFlight/claude_skills/tree/main/plugins/clang-format/skills/clang-format) (MIT). |
 | [`linux-kernel-review`](skills/linux-kernel-review/SKILL.md) *(suite)* | Linux kernel patch review: one orchestrator plus eight lens skills covering change intent, execution flow, resource lifecycle, locking/concurrency, security, driver/hardware, per-subsystem invariants, and a false-positive/severity gate. Adapted from [Sashiko](https://github.com/sashiko-dev/sashiko)'s review protocol (Apache-2.0) and [masoncl/review-prompts](https://github.com/masoncl/review-prompts) (MIT). See below. |
+| [`commit-message-review`](skills/commit-message-review/SKILL.md) | Verifies the commit message against the diff: claim/code mismatches, unmentioned user-visible behavior changes, vague messages on non-trivial diffs, implausible ticket references. |
+| [`design-doc-conformance`](skills/design-doc-conformance/SKILL.md) | Checks the implementation against design documents committed in the repo (`docs/design*.md`, `docs/adr/*.md`) or a wired context repo: contradictions cited to the doc line, new public interfaces absent from the design. Stays silent when no docs exist. |
 
 ### The `linux-kernel-review` suite
 
@@ -64,6 +66,15 @@ For the full kernel suite, copy **all nine** `linux-kernel-review`/`kernel-*` fo
 orchestrator and discipline gate assume the lenses are present. Eval fixtures (a buggy vs
 fixed demo driver with expected findings) live in
 [`skills/linux-kernel-review/evals/`](skills/linux-kernel-review/evals/).
+
+## Workflow skills (agent chores, not review lenses)
+
+These run in your coding agent (Claude Code, Qodo Command) as tasks, not in the review pipeline:
+
+| Skill | Purpose |
+|-------|---------|
+| [`guideline-distiller`](skills/guideline-distiller/SKILL.md) | Turns a prose style guide or team-conventions doc into atomic, enforceable review rules (one detectable violation per rule), flags conflicting/identical/overlapping rules, and quarantines aspirational prose for human review. |
+| [`toml-portal-migration-audit`](skills/toml-portal-migration-audit/SKILL.md) | Audits a repo's `.pr_agent.toml` against a portal-managed settings map and proposes a removal-only diff so the portal becomes the single source of truth. Unknown keys are marked for deploy-team confirmation, never guessed. |
 
 ## Usage
 
