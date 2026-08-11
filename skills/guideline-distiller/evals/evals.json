@@ -1,0 +1,23 @@
+{
+  "skill_name": "guideline-distiller",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Distill evals/prose-styleguide.md into atomic enforceable review rules for the Qodo portal. Write the result to a new best_practices markdown file and do not touch the source.",
+      "expected_output": "Produces one markdown file with one heading per atomic rule, each rule having imperative text, a one-line rationale, a minimal violating example, a compliant example, and a severity suggestion. Splits compound statements (snake_case functions vs UPPER_CASE macros vs no leading underscore become separate rules). Flags the function-brace conflict (control-statement braces on the same line vs all braces on their own line) and the duplicated include-guard rule. Moves aspirational prose (be readable, use common sense, avoid memory leaks, keep it simple, discuss with the platform team) to a not-enforceable section instead of dropping it. Invents no rule absent from the source and leaves prose-styleguide.md unmodified.",
+      "files": ["evals/prose-styleguide.md"]
+    },
+    {
+      "id": 2,
+      "prompt": "Our prose C style guide at evals/prose-styleguide.md only catches a fraction of planted violations in Qodo review. Convert it so each rule has exactly one detectable violation, and tell me which statements cannot be enforced at all.",
+      "expected_output": "Inventories every normative statement first, then outputs atomic rules with all five parts per rule, explicitly lists the not-enforceable statements with a one-line reason each, and calls out the internal brace-placement conflict and the identical include-guard duplicate before ingestion. No commits and no portal API calls; states the user should review the file before it goes live.",
+      "files": ["evals/prose-styleguide.md"]
+    },
+    {
+      "id": 3,
+      "prompt": "Distill evals/tiny-clean-rules.md into atomic enforceable review rules for the Qodo portal.",
+      "expected_output": "Recognizes the document is already atomic (each rule has one detectable violation, imperative text, rationale, both examples, and a severity) and reports that minimal or no changes are needed rather than rewriting the rules. Does not invent new rules and does not modify the source file.",
+      "files": ["evals/tiny-clean-rules.md"]
+    }
+  ]
+}

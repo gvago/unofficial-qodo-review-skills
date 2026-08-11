@@ -1,0 +1,8 @@
+cache: evict expired entries on read
+
+get() returned entries whose TTL had already passed whenever the cache
+was under the size limit, because the eviction sweep only ran on
+insert. Run the TTL sweep on read as well, so callers never see an
+expired value. Reads on a cold cache are unaffected.
+
+Fixes: CACHE-311
