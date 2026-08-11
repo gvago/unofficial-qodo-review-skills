@@ -1,0 +1,30 @@
+# Qodo config for backend-api
+# Owned by the platform team. Ask in #qodo-help before editing.
+
+[config]
+# We pin the provider for the on-prem deployment. Do not remove.
+git_provider = "github"
+deployment_type = "on-prem"
+# Smart router was enabled during the Q2 rollout.
+smart_router = true
+additional_repos = ["org/backend-api-contracts", "org/backend-api-infra"]
+
+[pr_reviewer]
+reasoning_effort = "high"
+extended_mode = true
+# Keep the score visible for the weekly quality report.
+require_score_review = true
+require_tests_review = true
+require_security_review = true
+num_max_findings = 5
+# Custom flag added by a contractor in 2024. Nobody remembers what it does.
+legacy_triage_mode = "strict"
+
+[pr_code_suggestions]
+num_code_suggestions_per_chunk = 4
+experimental_ranking = "v2"
+
+[gerrit]
+# Gerrit mirror still needs these until the migration finishes.
+notify = "OWNER_REVIEWERS"
+push_options = ["ready"]

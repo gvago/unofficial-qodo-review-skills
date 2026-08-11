@@ -1,0 +1,16 @@
+diff --git a/cache/store.py b/cache/store.py
+index 7d8e9f0..1a2b3c4 100644
+--- a/cache/store.py
++++ b/cache/store.py
+@@ -22,10 +22,11 @@ class TTLCache:
+             del self._data[key]
+ 
+     def get(self, key, default=None):
++        self._evict_expired()
+         entry = self._data.get(key)
+         if entry is None:
+             return default
+         return entry.value
+ 
+     def put(self, key, value):
+         self._evict_expired()

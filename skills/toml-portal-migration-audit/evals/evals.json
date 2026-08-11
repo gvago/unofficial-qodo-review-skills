@@ -1,0 +1,23 @@
+{
+  "skill_name": "toml-portal-migration-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Audit this repo's .pr_agent.toml for portal migration and propose the removal diff.",
+      "expected_output": "Classifies smart_router, reasoning_effort, extended_mode, require_score_review, require_tests_review, require_security_review, num_max_findings, and num_code_suggestions_per_chunk as portal-managed; version-dependent rows (smart_router, num_code_suggestions_per_chunk) are flagged as such in the migration notes. git_provider, deployment_type, additional_repos, and the entire [gerrit] section are toml-only and untouched. legacy_triage_mode and experimental_ranking are unknown, marked NEEDS-DEPLOY-TEAM-CONFIRMATION in a Data gaps section, and NOT in the diff. The unified diff removes only portal-managed lines, preserves every comment (including the score-report and contractor comments) and blank lines, includes one migration note per removed key naming the portal location, and states the diff was not applied. Fail if any comment is dropped, any unknown key is removed, or the diff is applied.",
+      "files": ["evals/mixed.pr_agent.toml"]
+    },
+    {
+      "id": 2,
+      "prompt": "Anything in this .pr_agent.toml that should move to the portal?",
+      "expected_output": "Nothing to remove. All keys (git_provider, deployment_type, additional_repos, gerrit.notify, gerrit.push_options) classify as toml-only. Pass only if no removal diff is proposed, no key is marked unknown, and the report says the file already matches the portal-as-source-of-truth model.",
+      "files": ["evals/clean.pr_agent.toml"]
+    },
+    {
+      "id": 3,
+      "prompt": "Our deploy team says only these keys are portal-managed in our version: pr_reviewer.num_max_findings and pr_reviewer.reasoning_effort. Audit mixed.pr_agent.toml with that list.",
+      "expected_output": "The supplied list replaces the bundled map entirely. The diff removes ONLY num_max_findings and reasoning_effort. Every other key, including ones the bundled map calls portal-managed (extended_mode, smart_router, section toggles), is either kept or marked NEEDS-DEPLOY-TEAM-CONFIRMATION per the deploy team list semantics; none of them appear in the removal diff. Fail if any key outside the supplied two is removed or if the bundled map is consulted for removals.",
+      "files": ["evals/mixed.pr_agent.toml"]
+    }
+  ]
+}

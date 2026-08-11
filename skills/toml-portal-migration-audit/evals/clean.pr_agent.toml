@@ -1,0 +1,12 @@
+# Qodo config for infra-tools
+# Only deployment plumbing lives here; everything else is in the portal.
+
+[config]
+git_provider = "gitlab"
+deployment_type = "on-prem"
+additional_repos = ["org/infra-tools-modules"]
+
+[gerrit]
+# Mirror review notifications for the legacy Gerrit instance.
+notify = "OWNER"
+push_options = ["ready", "wip"]

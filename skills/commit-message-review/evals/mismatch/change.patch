@@ -1,0 +1,35 @@
+diff --git a/src/netclient.c b/src/netclient.c
+index 3f2a1b0..9c4d7e2 100644
+--- a/src/netclient.c
++++ b/src/netclient.c
+@@ -12,11 +12,28 @@
+ #include "netclient.h"
+ 
+ static int nc_connect_once(struct nc_conn *conn);
++static void nc_backoff(int attempt);
++
++static int nc_retry_limit = 5;
+ 
+ int nc_connect(struct nc_conn *conn)
+ {
+-	return nc_connect_once(conn);
++	int rc = -1;
++	int attempt;
++
++	for (attempt = 0; attempt < nc_retry_limit; attempt++) {
++		rc = nc_connect_once(conn);
++		if (rc == 0)
++			return 0;
++		nc_backoff(attempt);
++	}
++	return rc;
+ }
++
++void nc_set_retry_limit(int limit)
++{
++	if (limit > 0)
++		nc_retry_limit = limit;
++}
+ 
+ static int nc_connect_once(struct nc_conn *conn)
+ {

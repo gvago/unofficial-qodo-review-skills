@@ -1,0 +1,23 @@
+{
+  "skill_name": "design-doc-conformance",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this change against the repository design docs. The design doc is at docs/design-ratelimit.md and the changed file is src/ratelimit/limiter.py.",
+      "expected_output": "A D2 finding: the implementation keys buckets by client IP (allow(ip)) while docs/design-ratelimit.md RL-5 states limits MUST be keyed by API token, not by client IP address. A second D2 finding is acceptable for the default capacity of 50 contradicting RL-2 (MUST be 100). Each finding quotes the design statement with its doc line and cites the changed code line. Pass only if the IP-keying contradiction is flagged with a doc citation.",
+      "files": ["evals/contradiction/docs/design-ratelimit.md", "evals/contradiction/src/ratelimit/limiter.py"]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this change against the repository design docs. The design doc is at docs/design-ratelimit.md and the changed file is src/ratelimit/limiter.py.",
+      "expected_output": "A D3 finding: the diff adds public entry points reset(token) and set_refill_interval(seconds) that are absent from the design doc's public interface inventory, and set_refill_interval also contradicts RL-3 (refill interval MUST NOT be configurable per client), which may be reported as D2. Pass only if at least one undesigned public interface is flagged with a citation of the interface inventory section.",
+      "files": ["evals/undesigned/docs/design-ratelimit.md", "evals/undesigned/src/ratelimit/limiter.py"]
+    },
+    {
+      "id": 3,
+      "prompt": "Review this change against the repository design docs. The design doc is at docs/design-ratelimit.md and the changed file is src/ratelimit/limiter.py.",
+      "expected_output": "Zero design-conformance findings. The implementation matches the doc: token bucket keyed by API token, capacity default 100, fixed 1 second refill, and only the documented public entry points. Internal helper renames are not governed by the doc. Pass only if this lens stays quiet and invents no requirements beyond the doc text.",
+      "files": ["evals/clean/docs/design-ratelimit.md", "evals/clean/src/ratelimit/limiter.py"]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+diff --git a/tool/cli.py b/tool/cli.py
+index a1b2c3d..e4f5a6b 100644
+--- a/tool/cli.py
++++ b/tool/cli.py
+@@ -3,24 +3,21 @@ import argparse
+ import sys
+ 
+ from tool.server import serve
+ 
+-DEFAULT_PORT = 8080
++DEFAULT_PORT = 9090
+ 
+ 
+ def build_parser():
+     parser = argparse.ArgumentParser(prog="tool")
+     parser.add_argument("--host", default="127.0.0.1")
+     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
+-    parser.add_argument("--verbose", action="store_true")
+     return parser
+ 
+ 
+ def main(argv=None):
+     args = build_parser().parse_args(argv)
+-    if args.verbose:
+-        print(f"listening on {args.host}:{args.port}", file=sys.stderr)
+     try:
+         serve(args.host, args.port)
+     except OSError as exc:
+-        print(f"failed to bind: {exc}", file=sys.stderr)
++        sys.stderr.write(f"tool: failed to bind {args.host}:{args.port}: {exc}\n")
+         return 1
+     return 0

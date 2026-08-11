@@ -1,0 +1,7 @@
+netclient: fix off-by-one in header length check
+
+The header parser read one byte past the end of the length field when
+the field was exactly at the buffer boundary. Clamp the index to the
+field size.
+
+Fixes: NETFS-1023

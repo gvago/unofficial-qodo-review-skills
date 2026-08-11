@@ -1,0 +1,23 @@
+{
+  "skill_name": "commit-message-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this change. The commit message is in commit_message.txt and the diff is in change.patch.",
+      "expected_output": "At least one M1 finding: the message claims an off-by-one fix in the header parser, but the diff adds a configurable connection retry feature (retry loop plus nc_set_retry_limit) and contains no parser change at all. An additional M4 concern that NETFS-1023 is attributed to a parser bug while the diff touches connection logic is acceptable. Findings anchor on changed lines in change.patch, never on the commit message file. Pass only if the fix-vs-feature mismatch is flagged.",
+      "files": ["evals/mismatch/commit_message.txt", "evals/mismatch/change.patch"]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this change. The commit message is in commit_message.txt and the diff is in change.patch.",
+      "expected_output": "An M3 finding: the message 'update code' is vague for a non-trivial diff. An M2 finding: the diff changes the default port from 8080 to 9090 and removes the --verbose CLI flag, both user-visible and unmentioned. Pass only if both the vagueness and at least one unmentioned behavior change are flagged, with anchors on changed lines in change.patch.",
+      "files": ["evals/vague/commit_message.txt", "evals/vague/change.patch"]
+    },
+    {
+      "id": 3,
+      "prompt": "Review this change. The commit message is in commit_message.txt and the diff is in change.patch.",
+      "expected_output": "Zero commit-message findings. The message accurately describes the TTL sweep added to get(), names the user-visible behavior change, is specific, and CACHE-311 is plausible for a cache change. Pass only if this lens stays quiet.",
+      "files": ["evals/clean/commit_message.txt", "evals/clean/change.patch"]
+    }
+  ]
+}
