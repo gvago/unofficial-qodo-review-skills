@@ -16,6 +16,30 @@ rules. Apply them to the changed code and report coverage explicitly.
 These five are a starting point. Replace them with your own organization's
 rules; the review contract below is the part worth keeping.
 
+## Consider the built-in security agent first
+
+Qodo ships a dedicated security agent, off by default, that most teams should
+turn on before reaching for a hand-written security skill:
+
+| Setting | What it does |
+|---|---|
+| `review_agent.enable_security_agent` | LLM-native security scan of the PR diff, emitting CWE-tagged findings |
+| `enable_security_static_scan` | Feeds static-analyzer candidates to that agent. Requires the agent to be enabled, and is a deployment-side toggle rather than a repo setting |
+
+It is a research preview, so confirm availability for your plan and
+deployment before relying on it.
+
+Prefer it when you want general vulnerability coverage: it carries CWE tagging
+and, with the static scan on, real analyzer output rather than a model reading
+a diff unaided.
+
+Use a skill like this one instead, or alongside it, when the rules are
+**yours** and generic scanning cannot know them: an internal authorization
+convention, a house policy on debug endpoints, a compliance clause you must
+show a specific per-rule verdict for. That is also why this skill's coverage
+summary is per rule, an auditor asks "was rule SEC-3 checked", which a
+vulnerability scanner does not answer.
+
 ## Pairing with a rule file
 
 When the same rules also live in a machine-readable policy file in the repo
