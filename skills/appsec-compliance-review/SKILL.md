@@ -1,6 +1,6 @@
 ---
 name: appsec-compliance-review
-description: Use when a PR diff touches application code governed by an organization's written security policy. Enforces five AppSec rules on the CHANGED code only - authentication/authorization on sensitive endpoints, injection, SSRF, debug/test code reachable in production, and hardcoded secrets - reporting per-rule coverage so an unevaluated rule is never a silent skip. Skip for docs-only or config-only diffs with no application code.
+description: Use when a PR diff touches application code, or any committed configuration that can carry credentials, governed by an organization's written security policy. Enforces five AppSec rules on the CHANGED code only - authentication/authorization on sensitive endpoints, injection, SSRF, debug/test code reachable in production, and hardcoded secrets - reporting per-rule per-file coverage so an unevaluated rule is never a silent skip. Skip only for docs-only diffs.
 license: Apache-2.0
 metadata:
   author: PR Agent Pro Team
@@ -100,11 +100,20 @@ carry both.
 3. If a rule cannot be evaluated for a changed file (for example, the file is
    binary or generated), report that explicitly with the reason. An
    unevaluated rule is itself a finding, never a silent skip.
-4. End with a coverage summary: N rules evaluated, M skipped and why,
-   K violations found.
-5. Apply a false-positive gate last: drop findings where the flagged code is
-   not reachable from a production path, or the input is not attacker
-   controlled, and say so when you drop one.
+4. End with a coverage summary reporting the rule x file grid, not just rule
+   totals: for each changed file, which of the five rules were evaluated and
+   which were skipped and why, then the violation count. "5 rules evaluated"
+   without naming the files it covered is not a coverage summary.
+5. Apply a false-positive gate last, per rule - it is not universal:
+   - SEC-2 and SEC-3 turn on untrusted input. Drop a finding when the input is
+     not attacker controlled or the code is unreachable from production.
+   - SEC-1, SEC-4 and SEC-5 do not require attacker-controlled input at all. A
+     missing authorization check, a debug route, or a hardcoded credential is a
+     violation on its own. Drop one only when the code is genuinely unreachable
+     from any production build - never because the input looks trusted.
+   - Test fixtures and eval files are source code. A credential committed in
+     one is still an SEC-5 violation; report it and note the context.
+   Say so whenever you drop a finding, with which clause let it go.
 
 ## Using this skill as a template
 
@@ -118,6 +127,8 @@ replace the rule sections with your organization's rules. Keep the structure:
   document. Do not paraphrase or condense: a shortened rule narrows what the
   review checks. Name the source document and state that it wins on any
   difference.
-- The "How to review" contract (full enumeration, coverage summary,
-  false-positive gate) is what turns a rules document into a review a security
-  team can trust; keep it verbatim.
+- The "How to review" contract (full enumeration, rule x file coverage
+  summary, per-rule false-positive gate) is what turns a rules document into a
+  review a security team can trust; keep it verbatim. If you add rules, classify
+  each one in step 5 as input-dependent or not - a gate that assumes every rule
+  needs attacker-controlled input silently drops the ones that don't.
