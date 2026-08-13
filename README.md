@@ -6,12 +6,6 @@ emits review findings driven by their rules.
 
 > **Unofficial.** Not affiliated with or endorsed by Qodo. These are community adaptations.
 
-> **What you need to run them.** The skills themselves are Apache-2.0 and free to
-> copy, adapt, and redistribute (see `LICENSE` and `NOTICE`). Acting on them is not:
-> they are executed by Qodo's skills agent during PR review, which requires an active
-> paid Qodo subscription on a plan that includes the skills agent. Check your plan
-> before adopting these. Nothing here changes what your Qodo subscription covers.
-
 These skills are **starting points**, adapted from existing open-source projects or built
 for customer initiatives. Tune the rules to your codebase and conventions before relying on
 them; any performance figures published by the upstream projects describe those projects,
@@ -45,7 +39,6 @@ That means a review skill must:
 | [`linux-kernel-review`](skills/linux-kernel-review/SKILL.md) *(suite)* | Linux kernel patch review: one orchestrator plus eight lens skills covering change intent, execution flow, resource lifecycle, locking/concurrency, security, driver/hardware, per-subsystem invariants, and a false-positive/severity gate. Adapted from [Sashiko](https://github.com/sashiko-dev/sashiko)'s review protocol (Apache-2.0) and [masoncl/review-prompts](https://github.com/masoncl/review-prompts) (MIT). See below. |
 | [`commit-message-review`](skills/commit-message-review/SKILL.md) | Verifies the commit message against the diff: claim/code mismatches, unmentioned user-visible behavior changes, vague messages on non-trivial diffs, implausible ticket references. |
 | [`design-doc-conformance`](skills/design-doc-conformance/SKILL.md) | Checks the implementation against design documents committed in the repo (`docs/design*.md`, `docs/adr/*.md`) or a wired context repo: contradictions cited to the doc line, new public interfaces absent from the design. Stays silent when no docs exist. |
-| [`appsec-compliance-review`](skills/appsec-compliance-review/SKILL.md) | Enforces an organization's written AppSec policy on changed application code: authentication/authorization on sensitive endpoints, injection, SSRF, debug/test code reachable in production, hardcoded secrets. Reports per-rule coverage so an unevaluated rule is never a silent skip. Template: swap the five rules for your own and keep the review contract. |
 
 ### The `linux-kernel-review` suite
 
