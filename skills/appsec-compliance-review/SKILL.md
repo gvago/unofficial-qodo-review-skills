@@ -111,8 +111,14 @@ carry both.
      missing authorization check, a debug route, or a hardcoded credential is a
      violation on its own. Drop one only when the code is genuinely unreachable
      from any production build - never because the input looks trusted.
+   - "Unreachable from production" means proven unreachable, not inferred from
+     a path or filename. A diff shows changed lines, not the import graph, so
+     you usually cannot prove it. When you cannot, evaluate the file on its
+     contents and report the finding.
    - Test fixtures and eval files are source code. A credential committed in
-     one is still an SEC-5 violation; report it and note the context.
+     one is still an SEC-5 violation; report it and note the context. Obvious
+     placeholder values are still findings: policy is about the pattern, and
+     the reviewer cannot tell a fake secret from a real one.
    Say so whenever you drop a finding, with which clause let it go.
 
 ## Using this skill as a template
