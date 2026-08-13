@@ -16,6 +16,19 @@ rules. Apply them to the changed code and report coverage explicitly.
 These five are a starting point. Replace them with your own organization's
 rules; the review contract below is the part worth keeping.
 
+## Consider Qodo's own security review first
+
+Qodo has a dedicated security review capability, currently a research preview,
+that covers general vulnerability detection. For most teams that is the better
+option and worth asking about before maintaining a security rule list by hand.
+Ask your Qodo contact whether it is available for your account.
+
+Use a skill like this one when the rules are **yours** and generic scanning
+cannot know them: an internal authorization convention, a house policy on
+debug endpoints, a compliance clause you must show a specific per-rule verdict
+for. That is also why this skill's coverage summary is per rule, an auditor
+asks "was rule SEC-3 checked", which a vulnerability scanner does not answer.
+
 ## Pairing with a rule file
 
 When the same rules also live in a machine-readable policy file in the repo
