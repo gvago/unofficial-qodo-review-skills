@@ -1,0 +1,36 @@
+# Qodo Standards Calibration rubric — written here on the skill's first run.
+# Edit this file to change how the skill proposes severities; the next run picks it up.
+# Schema (exactly these three keys; anything else stops the run):
+#   version: 1
+#   severity_overrides:   tag → error | warning | recommendation (omitted tags use defaults)
+#   guard_terms_extra:    terms appended to the default keyword guard (a hit blocks decreases)
+#
+# Tags and their default severities (mirrored from scripts/lib/calibrate-lib.mjs, the source of
+# truth; references/rubric.md describes each tag):
+#   documentation          recommendation   docstrings, comments, README/changelog presence
+#   naming                 recommendation   identifier, file, branch naming conventions
+#   style-formatting       recommendation   whitespace, line length, brace style, quotes, formatter output
+#   import-order           recommendation   import grouping/ordering, unused imports
+#   test-hygiene           warning          test presence, structure, naming, fixtures, flakiness patterns
+#   error-handling         warning          exceptions, retries, timeouts, null handling
+#   logging                warning          log presence, levels, structure, no sensitive data in logs
+#   api-contract           warning          public signatures, type annotations, schema/interface stability
+#   architecture           warning          module boundaries, layering, dependency direction, allowed imports between components
+#   correctness-contract   error            invariants whose violation produces wrong results or corruption
+#   security-control       error            authn/authz, input validation, injection, crypto usage
+#   data-integrity         error            migrations, transactions, deletion, backups, idempotency
+#   secrets-handling       error            credentials, tokens, keys in code/config/logs
+#
+# Default guard terms: auth, authoriz, authentic, secret, token, credential, password, PII,
+# personal data, payment, migration, delete, deletion, drop, encrypt, decrypt.
+#
+# Example (replace the empty values at the bottom of this file; do not add a second copy of a key):
+#   severity_overrides:
+#     documentation: warning
+#   guard_terms_extra:
+#     - billing
+#     - invoice
+
+version: 1
+severity_overrides: {}
+guard_terms_extra: []

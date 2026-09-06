@@ -82,6 +82,7 @@ These run in your coding agent (Claude Code, Qodo Command) as tasks, not in the 
 |-------|---------|
 | [`guideline-distiller`](skills/guideline-distiller/SKILL.md) | Turns a prose style guide or team-conventions doc into atomic, enforceable review rules (one detectable violation per rule), flags conflicting/identical/overlapping rules, and quarantines aspirational prose for human review. |
 | [`toml-portal-migration-audit`](skills/toml-portal-migration-audit/SKILL.md) | Audits a repo's `.pr_agent.toml` against a portal-managed settings map and proposes a removal-only diff so the portal becomes the single source of truth. Unknown keys are marked for deploy-team confirmation, never guessed. |
+| [`qodo-calibrate-rules`](skills/qodo-calibrate-rules/SKILL.md) | Calibrates the severity of every active Qodo rule in a workspace as one reviewable, reversible batch: exports the rules through the Qodo CLI, proposes a severity per rule from an editable rubric (13 taxonomy tags plus a keyword guard that blocks silent demotion of security/data rules), hands the admin a checklist or browser page to approve, skip, or override each row, applies only the approved rows, re-reads the workspace to verify, and can revert the whole run from its receipt. Fixes the common noise source of imported rules defaulting to `error`. Requires the Qodo CLI (logged in, workspace admin) and Node 20+, no npm install. Self-tests: `node --test 'skills/qodo-calibrate-rules/scripts/test/*.test.mjs'`. Authored by Jonathan Klick (Qodo), MIT, vendored at 0.8.0. |
 
 ## Usage
 
@@ -117,6 +118,12 @@ discipline references are reproduced from
 **Chris Mason** (MIT, see [THIRD_PARTY_LICENSE-masoncl-review-prompts](THIRD_PARTY_LICENSE-masoncl-review-prompts)).
 Sashiko's Rust infrastructure (lore/NNTP ingestion, worktrees, webhooks, UI) was deliberately
 not converted, the Qodo platform provides ingestion, consolidation, and rendering.
+
+`qodo-calibrate-rules` is vendored from
+[**qodo-calibrate-rules**](https://github.com/qodo-se/qodo-calibrate-rules) by
+**Jonathan Klick** (MIT, see [skills/qodo-calibrate-rules/LICENSE](skills/qodo-calibrate-rules/LICENSE)),
+upstream `main` at 305215e plus the test fix proposed in
+[qodo-se/qodo-calibrate-rules#5](https://github.com/qodo-se/qodo-calibrate-rules/pull/5).
 
 ## License
 
