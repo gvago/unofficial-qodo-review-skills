@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyError, errorOf, TRUNCATED_CODE } from '../lib/launcher-lib.mjs';
+import { classifyError, cmdQuote, errorOf, TRUNCATED_CODE } from '../lib/launcher-lib.mjs';
 
 // The classification table. A wrong answer here is the difference between one recorded row and a
 // stranded batch, so every case that has bitten (or could) is listed explicitly.
@@ -77,4 +77,12 @@ test('errorOf leaves a real success alone', () => {
   // An empty/false error key is not an error.
   assert.equal(errorOf({ ruleId: 7, error: null }), null);
   assert.equal(errorOf({ ruleId: 7, error: '' }), null);
+});
+
+test('cmdQuote wraps every word cmd.exe would split and doubles embedded quotes', () => {
+  assert.equal(cmdQuote('plain'), 'plain');
+  assert.equal(cmdQuote('--rule-id'), '--rule-id');
+  assert.equal(cmdQuote('C:\\Program Files\\qodo.cmd'), '"C:\\Program Files\\qodo.cmd"');
+  for (const meta of ['&', '|', '<', '>', '^', '(', ')', '%', '!']) assert.equal(cmdQuote(`a${meta}b`), `"a${meta}b"`, meta);
+  assert.equal(cmdQuote('say "hi"'), '"say ""hi"""');
 });

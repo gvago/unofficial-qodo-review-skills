@@ -184,10 +184,15 @@ the script is killed before its last line; it folds the pending results first, s
 An interrupted apply resumes by regenerating and re-running:
 
 ```
-node <skill-dir>/scripts/apply.mjs --run "$RUN" --generate --qodo <launcher>
+node <skill-dir>/scripts/apply.mjs --run "$RUN" --generate --qodo <launcher> --workspace-id <workspace_id>
 sh "$RUN/apply.sh"
 ```
 
+- `--workspace-id` must equal the checklist's `workspace_id`; otherwise `--generate` refuses (exit 2)
+  and writes nothing. Before writing a script it re-reads the active set once and drops any row
+  whose live severity is no longer the `current` the admin approved against (`drifted` in the
+  report, a warning on stderr, the row stays pending). For `--revert` the comparison is against
+  what the receipt believes the rule holds now (the apply target, or a `mismatch(<actual>)`).
 - Decisions come from `receipt.md` when it exists, otherwise `proposal.md`. When both exist and
   their rows differ, the receipt wins and the run warns that `proposal.md` is ignored — the admin
   edited the proposal after the apply started.
@@ -302,7 +307,7 @@ under it, exactly as the export refuses); and when the re-read itself fails. In 
 ## revert.sh
 
 ```
-node <skill-dir>/scripts/apply.mjs --run <run-dir> --generate --revert --qodo <launcher>
+node <skill-dir>/scripts/apply.mjs --run <run-dir> --generate --revert --qodo <launcher> --workspace-id <workspace_id>
 sh "<run-dir>/revert.sh"
 ```
 

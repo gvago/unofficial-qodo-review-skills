@@ -37,9 +37,14 @@ export function hasContent(rule) {
 // ---------------------------------------------------------------------------------------
 // Render
 
+// The exported url is workspace data, not the skill's, and it lands in an href in review.html.
+// Only an absolute https URL is kept; anything else (javascript:, data:, a relative path, junk)
+// falls back to the canonical portal link, so no rule record can plant an executable scheme.
+export const SAFE_URL_RE = /^https:\/\/[^\s"'<>]+$/i;
+
 export function ruleUrl(rule, ruleId) {
   const url = rule && typeof rule.url === 'string' ? rule.url.trim() : '';
-  return url || `https://app.qodo.ai/rules/${ruleId}`;
+  return SAFE_URL_RE.test(url) ? url : `https://app.qodo.ai/rules/${ruleId}`;
 }
 
 // A row is one line: a newline anywhere in the name collapses to a single space.
@@ -292,11 +297,11 @@ export function loadRun(runDir) {
   const exportPath = join(runDir, 'export.json');
   if (!existsSync(exportPath)) throw new RunError(`${exportPath} missing — export the rules first (export-rules.mjs)`);
   const exported = readJson(exportPath, 'export file');
-  if (!exported || typeof exported !== 'object' || Array.isArray(exported)) {
+  if (!exported || typeof exported !== 'object' || Array.isArray(exported) || !Array.isArray(exported.rules)) {
     throw new RunError(`${exportPath} must be a JSON object with a rules array — re-run export-rules.mjs`);
   }
   const rules = new Map();
-  for (const rule of Array.isArray(exported.rules) ? exported.rules : []) rules.set(String(rule.ruleId), rule);
+  for (const rule of exported.rules) rules.set(String(rule.ruleId), rule);
 
 
   const batches = listBatches(runDir);

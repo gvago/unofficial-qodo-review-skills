@@ -2,10 +2,10 @@
 // what approve.mjs --readback parses.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ROW_RE as LIB_ROW_RE } from '../lib/proposal-lib.mjs';
+import { ROW_RE as LIB_ROW_RE, SAFE_URL_RE as LIB_SAFE_URL_RE } from '../lib/proposal-lib.mjs';
 import {
-  ROW_RE, buildProposal, effective, groupKey, groupOrder, overrideCycle, parseClassification,
-  parseProposal, segments, tally,
+  ROW_RE, SAFE_URL_RE, buildProposal, effective, groupKey, groupOrder, overrideCycle, parseClassification,
+  parseProposal, safeUrl, segments, tally,
 } from '../../review/review.js';
 
 const PROPOSAL = `---
@@ -134,4 +134,12 @@ test('override cycles through severities that are neither current nor proposed',
   assert.equal(overrideCycle(row, { d: 'skip' }), 'error');
   assert.equal(overrideCycle(row, { d: 'override', target: 'error' }), 'error');
   assert.equal(overrideCycle({ current: 'error', target: 'warning' }, { d: 'approve' }), 'recommendation');
+});
+
+test('the page only renders https links, with the same allowlist the proposal renderer uses', () => {
+  assert.equal(SAFE_URL_RE.source, LIB_SAFE_URL_RE.source);
+  assert.equal(safeUrl('https://app.qodo.ai/rules/1'), 'https://app.qodo.ai/rules/1');
+  for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'http://x/1', 'https://x y', '', null, undefined]) {
+    assert.equal(safeUrl(bad), null, String(bad));
+  }
 });

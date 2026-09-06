@@ -24,7 +24,7 @@ function applied({ mode = 'ok', edits = [] } = {}) {
   ctx.workspace = seedWorkspace(ctx, CURRENT);
   ctx.log = join(ctx.runDir, 'update-log.jsonl');
   ctx.state = join(ctx.runDir, 'fake-state.json');
-  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--qodo', FAKE_QODO], { env: ctx.env });
+  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--qodo', FAKE_QODO], { env: ctx.env });
   assert.equal(g.status, 0, g.stderr);
   ctx.generate = g.json;
   ctx.apply = runScript(ctx, {

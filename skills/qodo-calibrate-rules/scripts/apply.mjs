@@ -33,6 +33,7 @@ import { chmodSync, existsSync, appendFileSync, readFileSync, renameSync, unlink
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isSeverity, requireNode20 } from './lib/calibrate-lib.mjs';
+import { DEFAULT_READ_ARGS, ExportError, fetchAll } from './lib/export-lib.mjs';
 import { classifyError, errorOf, forwardStderr, parseJsonOutput, sleep, spawnLauncher, stderrTail, TIMEOUT_MS } from './lib/launcher-lib.mjs';
 import { appendEntries, contentHash, latestByRule, ledgerPath, makeEntry, readLedger } from './lib/ledger-lib.mjs';
 import { hasContent, RunError } from './lib/proposal-lib.mjs';
@@ -40,8 +41,8 @@ import { readback, recordSkips } from './lib/readback-lib.mjs';
 import {
   DEFAULT_UPDATE_ARGS, EXIT, RECEIPT_FILE, RESULTS_FILE, REVERT_SCRIPT_FILE, SCRIPT_FILE,
   applyPhaseState, applyState, foldResults, isRevertCandidate, isRowLine, lastResultByRule,
-  markRows, parseReceipt, readResults, renderApplyScript, setFrontmatter, splitStatus,
-  stripStatuses, updateArgv,
+  markRows, mismatchActual, parseReceipt, readResults, renderApplyScript, setFrontmatter, splitStatus,
+  stripStatuses, updateArgv, verifyState,
 } from './lib/receipt-lib.mjs';
 
 requireNode20();
@@ -63,12 +64,12 @@ function fail(code, message) {
   process.exit(code);
 }
 
-const USAGE = `usage: node apply.mjs --run <run-dir> --generate [--revert] --qodo <launcher> [--update-args "${DEFAULT_UPDATE_ARGS}"]
+const USAGE = `usage: node apply.mjs --run <run-dir> --generate [--revert] --qodo <launcher> --workspace-id <id> [--read-args "${DEFAULT_READ_ARGS}"] [--update-args "${DEFAULT_UPDATE_ARGS}"]
        node apply.mjs --run <run-dir> --row <rule-id> --target <severity> [--revert] --qodo <launcher> [--update-args "…"]
        node apply.mjs --run <run-dir> --write-receipt [--revert]\n`;
 
 function parseArgs(argv) {
-  const args = { run: null, generate: false, writeReceipt: false, row: null, target: null, revert: false, qodo: 'qodo', updateArgs: DEFAULT_UPDATE_ARGS };
+  const args = { run: null, generate: false, writeReceipt: false, row: null, target: null, revert: false, qodo: 'qodo', updateArgs: DEFAULT_UPDATE_ARGS, readArgs: DEFAULT_READ_ARGS, workspaceId: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -83,6 +84,8 @@ function parseArgs(argv) {
     else if (a === '--revert') args.revert = true;
     else if (a === '--qodo') args.qodo = next();
     else if (a === '--update-args') args.updateArgs = next();
+    else if (a === '--read-args') args.readArgs = next();
+    else if (a === '--workspace-id') args.workspaceId = next();
     else if (a === '-h' || a === '--help') {
       process.stdout.write(USAGE);
       process.exit(0);
@@ -99,8 +102,11 @@ function parseArgs(argv) {
     args.row = String(args.row).trim();
     if (!args.target) fail(EXIT.usage, '--row needs --target <severity>');
   }
+  if (args.generate && !args.workspaceId) fail(EXIT.usage, '--generate needs --workspace-id <id> — run whoami again and pass its workspace_id');
   args.updateWords = args.updateArgs.trim().split(/\s+/).filter(Boolean);
   if (!args.updateWords.length) fail(EXIT.usage, `--update-args must name the rules-update command, e.g. "${DEFAULT_UPDATE_ARGS}"`);
+  args.readWords = args.readArgs.trim().split(/\s+/).filter(Boolean);
+  if (!args.readWords.length) fail(EXIT.usage, `--read-args must name the rules-list read command, e.g. "${DEFAULT_READ_ARGS}"`);
   return args;
 }
 
@@ -162,6 +168,51 @@ function refuseClosedRun(frontmatter, runId, what) {
   fail(EXIT.refused, `run ${runId} was reverted (reverted_at ${frontmatter.reverted_at}) — this run is closed for apply; start a new run. ${what} wrote nothing.`);
 }
 
+// The checklist names the workspace the admin approved against; the launcher writes to whichever
+// workspace it is logged into now. They must agree before a script is generated, or a resume after
+// an account or workspace switch would update the same rule ids in another tenant.
+function checkWorkspace(frontmatter, args, what) {
+  const recorded = String(frontmatter?.workspace_id ?? '').trim();
+  if (!recorded) fail(EXIT.refused, `the checklist has no workspace_id in its frontmatter — re-render the proposal. ${what} wrote nothing.`);
+  if (recorded !== String(args.workspaceId).trim()) {
+    fail(EXIT.refused, `the checklist was rendered for workspace "${recorded}" but the launcher is logged into "${args.workspaceId}" — log into that workspace, or start a new run in this one. ${what} wrote nothing.`);
+  }
+}
+
+const same = (a, b) => String(a ?? '').toLowerCase() === String(b ?? '').toLowerCase();
+
+// One paged read of the active set through the reader export and verify use, so a severity that
+// moved since export is noticed before anything is written rather than after.
+// ponytail: read once at --generate, not per row. apply.sh runs seconds later and a per-row
+// `rules get` would double the API calls; verify still catches anything that lands in that gap.
+function liveSeverities(args) {
+  let live;
+  try {
+    live = fetchAll(args.qodo, args.readWords, { name: 'apply' });
+  } catch (e) {
+    if (e instanceof ExportError) fail(EXIT.refused, `${e.message} Cannot confirm the workspace still matches the checklist; nothing written.`);
+    throw e;
+  }
+  const severityOf = new Map();
+  for (const rule of live.rules) severityOf.set(String(rule.ruleId), rule.severity);
+  return severityOf;
+}
+
+// Splits rows into the ones the workspace still holds at `expect` and the ones that moved. A moved
+// row is not sent: the admin decided on a severity that is no longer there, so the next run must
+// propose it again.
+function splitDrift(rows, live, expect, warnings, scriptName) {
+  const drifted = [];
+  const keep = [];
+  for (const r of rows) {
+    const now = live.get(String(r.rule_id)) ?? null;
+    if (same(now, expect(r))) { keep.push(r); continue; }
+    drifted.push({ rule_id: r.rule_id, expected: expect(r), live: now });
+    warnings.push(`rule ${r.rule_id} was "${expect(r)}" when the checklist was made but the workspace now holds ${now === null ? 'no active rule with that id' : `"${now}"`} — changed since, left out of ${scriptName}; it stays pending and the next run proposes it again`);
+  }
+  return { keep, drifted };
+}
+
 function generate(args, runDir, runId) {
   const receiptPath = join(runDir, RECEIPT_FILE);
   const proposalPath = join(runDir, 'proposal.md');
@@ -204,6 +255,7 @@ function generate(args, runDir, runId) {
   const result = readbackOr(runDir, { file: source, text: stripStatuses(receiptText) });
   const parsed = parseReceipt(receiptText);
   refuseClosedRun(parsed.frontmatter, runId, '--generate');
+  checkWorkspace(parsed.frontmatter, args, '--generate');
   // The apply state, not the effective status: a `· applied · verified` row is still applied.
   const statusOf = new Map();
   for (const row of parsed.rows) if (row.ok) statusOf.set(String(row.rule_id), row.apply_state);
@@ -213,7 +265,11 @@ function generate(args, runDir, runId) {
   const alreadySkipped = decisions.filter((r) => statusOf.get(String(r.rule_id)) === 'skipped').map((r) => r.rule_id);
   // A settled row never goes back in the script: `applied` is done, and a `· skipped` token is a
   // decision already taken even if the checkbox was ticked again afterwards.
-  const rows = decisions.filter((r) => !SETTLED.includes(statusOf.get(String(r.rule_id))));
+  const candidates = decisions.filter((r) => !SETTLED.includes(statusOf.get(String(r.rule_id))));
+  // A row is only sent if the workspace still holds the severity the admin saw in the checklist.
+  const { keep: rows, drifted } = candidates.length
+    ? splitDrift(candidates, liveSeverities(args), (r) => r.current, warnings, SCRIPT_FILE)
+    : { keep: [], drifted: [] };
   const skips = result.rows.filter((r) => r.decision === 'skip');
 
   // Unchecked rows carry `· skipped` so the receipt says why nothing happened to them.
@@ -233,6 +289,7 @@ function generate(args, runDir, runId) {
     results: resultsPath,
     rows_to_apply: rows.length,
     rule_ids: rows.map((r) => r.rule_id),
+    drifted,
     already_applied: alreadyApplied,
     already_skipped: alreadySkipped,
     skipped: skips.length,
@@ -306,10 +363,11 @@ function generateRevert(args, runDir, runId) {
 
   const result = readbackOr(runDir, { file: RECEIPT_FILE, text: stripStatuses(receiptText) });
   const parsed = parseReceipt(receiptText);
+  checkWorkspace(parsed.frontmatter, args, '--generate --revert');
   const rowOf = new Map();
   for (const row of parsed.rows) if (row.ok) rowOf.set(String(row.rule_id), row);
 
-  const rows = [];
+  const candidates = [];
   const alreadyReverted = [];
   const notCandidates = [];
   const unchecked = [];
@@ -318,7 +376,9 @@ function generateRevert(args, runDir, runId) {
     const state = applyState(statuses);
     if (state === 'reverted') { alreadyReverted.push(r.rule_id); continue; }
     if (isRevertCandidate({ statuses, current: r.current })) {
-      rows.push({ rule_id: r.rule_id, target: r.current, apply_state: state });
+      // What the receipt believes the workspace holds now: the apply target, or whatever verify saw.
+      const believed = state === 'applied' ? r.target : mismatchActual(verifyState(statuses));
+      candidates.push({ rule_id: r.rule_id, target: r.current, apply_state: state, believed });
       // Worth saying out loud: this row is only in the revert because the receipt says the apply
       // changed it, even though the checklist no longer approves it.
       if (r.decision !== 'approve' && r.decision !== 'override') unchecked.push({ rule_id: r.rule_id, decision: r.decision, apply_state: state });
@@ -328,6 +388,11 @@ function generateRevert(args, runDir, runId) {
   }
 
   const warnings = unchecked.map((u) => `rule ${u.rule_id} is \`${u.decision}\` in the checklist but \`· ${u.apply_state}\` in the receipt — the apply changed it, so the revert includes it`);
+  // A revert only puts back what this run's apply wrote. A rule someone else changed since is
+  // left alone: writing `current` over it would restore a severity older than their edit.
+  const { keep: rows, drifted } = candidates.length
+    ? splitDrift(candidates, liveSeverities(args), (r) => r.believed, warnings, REVERT_SCRIPT_FILE)
+    : { keep: [], drifted: [] };
   for (const w of warnings) process.stderr.write(`apply: ${w}\n`);
 
   writeAtomic(receiptPath, receiptText);
@@ -341,6 +406,7 @@ function generateRevert(args, runDir, runId) {
     rows_to_revert: rows.length,
     rule_ids: rows.map((r) => r.rule_id),
     targets: Object.fromEntries(rows.map((r) => [r.rule_id, r.target])),
+    drifted,
     already_reverted: alreadyReverted,
     // Every row the revert is not touching, by id, with why — so an unchecked-but-applied row can
     // never be silently absent from the report.

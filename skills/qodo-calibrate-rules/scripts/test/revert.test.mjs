@@ -21,7 +21,7 @@ function applied({ mode = 'ok', edits = [] } = {}) {
   ctx.workspace = seedWorkspace(ctx, CURRENT);
   ctx.log = join(ctx.runDir, 'update-log.jsonl');
   ctx.state = join(ctx.runDir, 'fake-state.json');
-  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--qodo', FAKE_QODO], { env: ctx.env });
+  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--qodo', FAKE_QODO], { env: ctx.env });
   assert.equal(g.status, 0, g.stderr);
   ctx.apply = runScript(ctx, {
     FAKE_UPDATE_MODE: mode, FAKE_UPDATE_LOG: ctx.log, FAKE_STATE: ctx.state, FAKE_WORKSPACE: ctx.workspace, ...FAST,
@@ -31,7 +31,7 @@ function applied({ mode = 'ok', edits = [] } = {}) {
 }
 
 function generateRevert(ctx, args = []) {
-  const res = run(APPLY, ['--run', ctx.runDir, '--generate', '--revert', '--qodo', FAKE_QODO, ...args], { env: ctx.env });
+  const res = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--revert', '--qodo', FAKE_QODO, ...args], { env: ctx.env });
   ctx.generate = res.json;
   return res;
 }
@@ -114,7 +114,7 @@ test('a receipt with nothing changed reports nothing_to_revert and writes no scr
 
 test('--generate --revert without a receipt refuses', () => {
   const ctx = confirmed();
-  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--revert', '--qodo', FAKE_QODO], { env: ctx.env });
+  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--revert', '--qodo', FAKE_QODO], { env: ctx.env });
   assert.equal(g.status, EXIT.refused);
   assert.match(g.stderr, /receipt\.md missing/);
   assert.match(g.stderr, /Nothing written/);
@@ -260,7 +260,7 @@ test('a reverted run is closed for apply', () => {
   assert.equal(runRevert(ctx).status, 0);
   const before = readText(ctx.receipt);
 
-  const gen = run(APPLY, ['--run', ctx.runDir, '--generate', '--qodo', FAKE_QODO], { env: ctx.env });
+  const gen = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--qodo', FAKE_QODO], { env: ctx.env });
   assert.equal(gen.status, EXIT.refused);
   assert.match(gen.stderr, /was reverted .* this run is closed for apply; start a new run/);
   assert.match(gen.stderr, /--generate wrote nothing/);
@@ -308,7 +308,7 @@ test('a revert that reverted nothing does not close the run for apply', () => {
   assert.equal(fm.reverted_at, undefined);
   assert.equal(String(fm.revert_exit_code), '3');
   // Apply is therefore still open: --generate reports the rows it would re-send.
-  const gen = run(APPLY, ['--run', ctx.runDir, '--generate', '--qodo', FAKE_QODO], { env: ctx.env });
+  const gen = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--qodo', FAKE_QODO], { env: ctx.env });
   assert.equal(gen.status, 0, gen.stderr);
   assert.equal(gen.json.status, 'nothing_to_apply'); // every row is already `· applied`
   assert.deepEqual(gen.json.already_applied.sort((a, b) => a - b), [99, 101, 102, 103, 104]);
@@ -323,7 +323,7 @@ test('a revert that reverted some rows closes the run even though it aborted', (
   assert.equal(res.json.closed_for_apply, true);
   assert.ok(receiptFrontmatter(ctx.runDir).reverted_at, 'reverted_at is stamped');
   // Half the workspace has been put back, so re-applying this receipt would undo the undo.
-  const gen = run(APPLY, ['--run', ctx.runDir, '--generate', '--qodo', FAKE_QODO], { env: ctx.env });
+  const gen = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--qodo', FAKE_QODO], { env: ctx.env });
   assert.equal(gen.status, EXIT.refused);
   assert.match(gen.stderr, /closed for apply/);
 });
@@ -373,4 +373,32 @@ test('re-running a pre-revert apply.sh after a revert writes nothing', () => {
   assert.equal(receiptFrontmatter(ctx.runDir).applied_at, appliedAt);
   assert.deepEqual(ledgerLines(ctx.ledger), ledgerBefore);
   for (const id of [99, 101, 102, 103, 104]) assert.equal(readWorkspace(ctx)[String(id)], CURRENT[id], `workspace ${id}`);
+});
+
+test('a rule someone changed after the apply is left out of revert.sh and reported as drifted', () => {
+  const ctx = applied({ edits: [['- [x] 102 ', uncheck], ['- [x] 103 ', uncheck], ['- [x] 104 ', uncheck]] });
+  assert.equal(stateFor(ctx, 99), 'applied');
+  assert.equal(stateFor(ctx, 101), 'applied');
+  // A colleague moved rule 99 off the apply target in the portal before the admin asked to undo.
+  const ws = JSON.parse(readText(ctx.workspace));
+  ws['99'] = 'warning';
+  writeFileSync(ctx.workspace, JSON.stringify(ws));
+  const g = generateRevert(ctx);
+  assert.equal(g.status, 0, g.stderr);
+  assert.deepEqual(g.json.rule_ids, [101]);
+  assert.deepEqual(g.json.drifted, [{ rule_id: 99, expected: 'recommendation', live: 'warning' }]);
+  assert.match(g.stderr, /rule 99 was "recommendation" when the checklist was made but the workspace now holds "warning"/);
+  const res = runRevert(ctx);
+  assert.ok(!updateLog(ctx.revertLog).some((c) => c.rule_id === '99'), 'the moved rule is never written');
+  assert.equal(readWorkspace(ctx)['99'], 'warning', 'the colleague\'s edit survives');
+  assert.equal(readWorkspace(ctx)['101'], 'error');
+  void res;
+});
+
+test('--generate --revert refuses when the launcher is logged into another workspace', () => {
+  const ctx = applied();
+  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-other', '--revert', '--qodo', FAKE_QODO], { env: ctx.env });
+  assert.equal(g.status, EXIT.refused);
+  assert.match(g.stderr, /rendered for workspace "ws-1" but the launcher is logged into "ws-other"/);
+  assert.equal(existsSync(ctx.revert), false);
 });

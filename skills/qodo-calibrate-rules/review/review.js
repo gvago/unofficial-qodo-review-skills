@@ -13,6 +13,10 @@
 export const ROW_RE = /^- \[( |x|X|\?)\] (\d+) · (.+) · (\S+) → (\S+)(?: · guard: ([^·]+))? · (\S+)\s*$/;
 export const TAX = ['documentation', 'naming', 'style-formatting', 'import-order', 'test-hygiene', 'error-handling', 'logging', 'api-contract', 'architecture', 'correctness-contract', 'security-control', 'data-integrity', 'secrets-handling'];
 export const SEVERITIES = ['error', 'warning', 'recommendation'];
+// Same allowlist as proposal-lib's SAFE_URL_RE, repeated here because the page is self-contained:
+// a proposal.md edited by hand can carry any token in the url column, and only https may be an href.
+export const SAFE_URL_RE = /^https:\/\/[^\s"'<>]+$/i;
+export const safeUrl = (u) => (SAFE_URL_RE.test(String(u || '')) ? u : null);
 export const P = { error: 'P0', warning: 'P1', recommendation: 'P2' };
 const RANK = { recommendation: 0, warning: 1, error: 2 };
 
@@ -390,7 +394,7 @@ class ReviewApp {
             <span>Tag <b>${esc(k.tag || '—')}</b></span>
             <span>Scope <b class="mono">${esc((x.scopes || []).join(', ') || '—')}</b></span>
             <span>Source <b class="mono">${esc(x.source || '—')}</b></span>
-            <a href="${esc(r.url)}" target="_blank" rel="noopener">Open in Qodo ↗</a>
+            ${safeUrl(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">Open in Qodo ↗</a>` : '<span class="mono">no portal link</span>'}
           </div>
         </div>
         <div class="decision-line">${esc(decisionLine)}</div>

@@ -161,6 +161,10 @@ export function readWorkspace(ctx) {
 // approve.test.mjs uses. Returns the context plus the readback JSON.
 export function confirmed({ edits = [], rules = CALIB_RULES, tags = CALIB_TAGS, rubricYaml } = {}) {
   const ctx = makeCalibrated(rubricYaml === undefined ? { rules, tags } : { rules, tags, rubricYaml });
+  // --generate re-reads the live severities before writing a script, so the fake workspace must
+  // hold what the export said: seed it from the rules' `current` and hand the file to every call.
+  ctx.workspace = seedWorkspace(ctx, Object.fromEntries(rules.map((r) => [r.ruleId, r.severity])));
+  ctx.env = { ...ctx.env, FAKE_WORKSPACE: ctx.workspace };
   const r = run(PROPOSAL, ['--run', ctx.runDir, '--render', '--workspace-id', 'ws-1'], { env: ctx.env });
   if (r.status !== 0) throw new Error(`render failed: ${r.stderr}`);
   ctx.proposal = join(ctx.runDir, 'proposal.md');

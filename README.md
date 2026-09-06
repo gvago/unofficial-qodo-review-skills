@@ -122,8 +122,10 @@ not converted, the Qodo platform provides ingestion, consolidation, and renderin
 `qodo-calibrate-rules` is vendored from
 [**qodo-calibrate-rules**](https://github.com/qodo-se/qodo-calibrate-rules) by
 **Jonathan Klick** (MIT, see [skills/qodo-calibrate-rules/LICENSE](skills/qodo-calibrate-rules/LICENSE)),
-upstream `main` at 305215e plus the test fix proposed in
-[qodo-se/qodo-calibrate-rules#5](https://github.com/qodo-se/qodo-calibrate-rules/pull/5).
+upstream `main` at 305215e plus the fixes proposed upstream in
+[qodo-se/qodo-calibrate-rules#5](https://github.com/qodo-se/qodo-calibrate-rules/pull/5) (test)
+and [#6](https://github.com/qodo-se/qodo-calibrate-rules/pull/6) (workspace binding, pre-write drift
+check, URL allowlist, classifier prompt hardening, cmd.exe quoting, malformed-export refusal).
 
 ## License
 

@@ -90,13 +90,19 @@ export function errorOf(payload) {
   return null;
 }
 
+// One word for cmd.exe. It splits on more than whitespace, so any of its metacharacters forces
+// quotes, and `"` doubles inside them (cmd has no backslash escape; the doubled form is what its
+// parser undoes). Only the .cmd/.bat path below uses it.
+export function cmdQuote(s) {
+  return /[\s"&|<>^()%!]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
 export function spawnLauncher(launcher, argv, { timeout = TIMEOUT_MS } = {}) {
   const opts = { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout };
   if (/\.(mjs|cjs|js)$/i.test(launcher)) return spawnSync(process.execPath, [launcher, ...argv], opts);
   if (/\.(cmd|bat)$/i.test(launcher)) {
     // Node >= 20.12 refuses to spawn .cmd/.bat without a shell.
-    const quote = (s) => (/[\s"]/.test(s) ? `"${s.replace(/"/g, '\\"')}"` : s);
-    return spawnSync(quote(launcher), argv.map(quote), { ...opts, shell: true });
+    return spawnSync(cmdQuote(launcher), argv.map(cmdQuote), { ...opts, shell: true });
   }
   return spawnSync(launcher, argv, opts);
 }

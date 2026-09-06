@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { appendFileSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { contentHash } from '../lib/ledger-lib.mjs';
-import { parseFrontmatter, parseProposal, parseRow, renderRow } from '../lib/proposal-lib.mjs';
+import { parseFrontmatter, parseProposal, parseRow, renderRow, ruleUrl } from '../lib/proposal-lib.mjs';
 import {
   APPROVE, CALIB_DECISIONS, CALIB_PRECHECKED, CALIB_RULES, CALIB_TAGS, CALIB_UNCHANGED,
   PROPOSAL, classificationRows, makeCalibrated, readText, run,
@@ -303,3 +303,19 @@ test('parseFrontmatter says what is wrong and coerces only the count keys', () =
 });
 
 
+
+test('ruleUrl keeps only absolute https URLs; anything else falls back to the portal link', () => {
+  assert.equal(ruleUrl({ url: 'https://portal.example.com/rules/104' }, 104), 'https://portal.example.com/rules/104');
+  for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'http://plain.example.com/r/1', '/relative/1', 'https://x y', '', null, 42]) {
+    assert.equal(ruleUrl({ url: bad }, 7), 'https://app.qodo.ai/rules/7', `url ${JSON.stringify(bad)}`);
+  }
+  assert.equal(ruleUrl(null, 7), 'https://app.qodo.ai/rules/7');
+});
+
+test('an export.json without a rules array is refused, not read as an empty workspace', () => {
+  const ctx = setup();
+  writeFileSync(join(ctx.runDir, 'export.json'), JSON.stringify({ run_id: 'x', totalCount: 0 }));
+  const res = render(ctx);
+  assert.equal(res.status, 2);
+  assert.match(res.stderr, /must be a JSON object with a rules array/);
+});

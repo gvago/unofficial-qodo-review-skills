@@ -18,7 +18,7 @@ const uncheck = (line) => line.replace('- [x] ', '- [ ] ');
 const retarget = (to) => (line) => line.replace(/→ \S+/, `→ ${to}`);
 
 function generate(ctx, args = []) {
-  const res = run(APPLY, ['--run', ctx.runDir, '--generate', '--qodo', FAKE_QODO, ...args], { env: ctx.env });
+  const res = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--qodo', FAKE_QODO, ...args], { env: ctx.env });
   return res;
 }
 
@@ -304,10 +304,21 @@ test('a non-JSON response fails the row rather than being read as success', () =
   assert.equal(statusFor(ctx, 101), 'failed(invalid_json)');
 });
 
-test('a launcher that cannot be spawned aborts the loop', () => {
+test('a launcher that cannot be spawned is refused at --generate, before any script exists', () => {
   const ctx = confirmed();
-  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--qodo', join(ctx.runDir, 'no-such-qodo')], { env: ctx.env });
-  assert.equal(g.status, 0, g.stderr);
+  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-1', '--qodo', join(ctx.runDir, 'no-such-qodo')], { env: ctx.env });
+  // The pre-write read of the live severities is the first thing that needs the launcher.
+  assert.equal(g.status, EXIT.refused);
+  assert.match(g.stderr, /spawn_failed|no-such-qodo/);
+  assert.match(g.stderr, /nothing written/);
+  assert.equal(existsSync(ctx.script), false);
+});
+
+test('a launcher that dies mid-loop aborts the loop and leaves later rows pending', () => {
+  const ctx = generated();
+  // Generation read the fake fine; the script then points at a launcher that is gone.
+  const script = readText(ctx.script).replaceAll(FAKE_QODO, join(ctx.runDir, 'no-such-qodo'));
+  writeFileSync(ctx.script, script);
   const res = runScript(ctx, FAST);
   assert.equal(res.status, EXIT.report);
   assert.equal(res.json.aborted, true);
@@ -316,6 +327,42 @@ test('a launcher that cannot be spawned aborts the loop', () => {
   assert.deepEqual(receiptStatuses(ctx.runDir).filter(([, s]) => s === 'pending').map(([id]) => id), [...CALIB_PRECHECKED, ...CALIB_DECISIONS].sort((a, b) => a - b));
   assert.equal(applyResults(ctx.runDir).filter((r) => r.status === 'aborted').length, 1);
   assert.equal(applyResults(ctx.runDir).length, 1); // the rows after the abort were never attempted
+});
+
+// ---------------------------------------------------------------------------------------
+// Workspace binding and drift (pre-write checks)
+
+test('--generate refuses when the launcher is logged into a different workspace than the checklist names', () => {
+  const ctx = confirmed();
+  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--workspace-id', 'ws-other', '--qodo', FAKE_QODO], { env: ctx.env });
+  assert.equal(g.status, EXIT.refused);
+  assert.match(g.stderr, /rendered for workspace "ws-1" but the launcher is logged into "ws-other"/);
+  assert.equal(existsSync(ctx.script), false);
+  assert.equal(existsSync(ctx.receipt), false);
+});
+
+test('--generate without --workspace-id is a usage error', () => {
+  const ctx = confirmed();
+  const g = run(APPLY, ['--run', ctx.runDir, '--generate', '--qodo', FAKE_QODO], { env: ctx.env });
+  assert.equal(g.status, EXIT.usage);
+  assert.match(g.stderr, /--generate needs --workspace-id/);
+});
+
+test('a rule whose severity moved since export is left out of apply.sh and reported as drifted', () => {
+  const ctx = confirmed();
+  // Someone changed rule 101 in the portal after the export said `error`.
+  const ws = JSON.parse(readText(ctx.workspace));
+  ws['101'] = 'warning';
+  writeFileSync(ctx.workspace, JSON.stringify(ws));
+  const g = generate(ctx);
+  assert.equal(g.status, 0, g.stderr);
+  assert.deepEqual(g.json.rule_ids, CALIB_PRECHECKED.filter((id) => id !== 101));
+  assert.deepEqual(g.json.drifted, [{ rule_id: 101, expected: 'error', live: 'warning' }]);
+  assert.match(g.stderr, /rule 101 was "error" when the checklist was made but the workspace now holds "warning"/);
+  const res = apply(ctx, 'ok');
+  assert.equal(res.status, EXIT.report); // 101 is still pending, so the report is not clean
+  assert.ok(!updateLog(ctx.log).some((c) => c.rule_id === '101'), 'the moved rule is never sent');
+  assert.equal(statusFor(ctx, 101), 'pending');
 });
 
 // ---------------------------------------------------------------------------------------
