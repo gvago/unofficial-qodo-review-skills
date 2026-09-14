@@ -4,50 +4,72 @@ import { useState } from "react";
 export default function NewsletterBanner() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
+  const [topic, setTopic] = useState("");
+  const [emailError, setEmailError] = useState("");
 
-  const submit = async () => {
-    const res = await fetch("/api/newsletter", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-    setStatus(res.ok ? "Subscribed!" : "Something went wrong");
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!email.includes("@")) {
+      setEmailError("Enter a valid email address.");
+      return;
+    }
+    setEmailError("");
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setStatus(res.ok ? "Subscribed!" : "Something went wrong");
+    } catch {
+      setStatus("We couldn't subscribe you. Please try again.");
+    }
   };
 
   return (
     <div className="banner">
-      <img src="/img/newsletter-hero.png" />
+      <img src="/img/newsletter-hero.png" alt="" />
 
-      <div className="banner-title">Stay in the loop</div>
+      <h2 className="banner-title">Stay in the loop</h2>
 
-      <div className="perks">
-        <div>Weekly digest</div>
-        <div>Member-only deals</div>
-        <div>Early access to sales</div>
-      </div>
+      <ul className="perks">
+        <li>Weekly digest</li>
+        <li>Member-only deals</li>
+        <li>Early access to sales</li>
+      </ul>
 
-      <input
-        type="text"
-        placeholder="Your email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ borderColor: email.includes("@") ? "green" : "red" }}
-      />
+      <form onSubmit={submit}>
+        <label htmlFor="newsletter-email">Email address</label>
+        <input
+          id="newsletter-email"
+          type="email"
+          autoComplete="email"
+          placeholder="Your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          aria-invalid={emailError ? "true" : "false"}
+          aria-describedby={emailError ? "newsletter-email-error" : undefined}
+          style={{ borderColor: emailError ? "red" : email.includes("@") ? "green" : undefined }}
+        />
+        {emailError && <p id="newsletter-email-error">{emailError}</p>}
+        <button type="submit" className="subscribe-btn">
+          Go
+        </button>
+      </form>
 
-      <div className="subscribe-btn" onClick={submit}>
-        Go
-      </div>
-
-      {status && <p className="status-text">{status}</p>}
+      <p className="status-text" role="status">{status}</p>
 
       <p>
-        We publish our data practices. <a href="/privacy">Click here</a>.
+        We publish our data practices. <a href="/privacy">Privacy policy</a>.
       </p>
 
-      <select onChange={(e) => (window.location.href = e.target.value)}>
+      <select value={topic} onChange={(e) => setTopic(e.target.value)}>
         <option value="">More from us</option>
         <option value="/blog">Blog</option>
         <option value="/podcast">Podcast</option>
       </select>
+      <button type="button" disabled={!topic} onClick={() => { window.location.href = topic; }}>
+        Go to selected topic
+      </button>
     </div>
   );
 }
