@@ -51,7 +51,24 @@ export default function SignupCard() {
           aria-label="Signup confirmation"
           ref={dialogRef}
           tabIndex={-1}
-          onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpen(false);
+            if (e.key === "Tab") {
+              const focusable = dialogRef.current?.querySelectorAll(
+                "button, [href], input, [tabindex]:not([tabindex='-1'])"
+              );
+              if (!focusable?.length) return;
+              const first = focusable[0];
+              const last = focusable[focusable.length - 1];
+              if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+              }
+            }
+          }}
         >
           <p>You are signed up!</p>
           <button onClick={() => setOpen(false)}>Close</button>
