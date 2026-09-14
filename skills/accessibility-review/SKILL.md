@@ -55,7 +55,7 @@ inventing a verdict.
 - **Violation:** A `<div>`/`<span>` with a click handler acts as a button or
   link without `role`, accessible name, and keyboard support; a custom
   widget's visual state changes without the matching ARIA state update;
-  ARIA is used where a native element would do.
+  Replacing a conforming custom widget with native HTML is advisory, not a WCAG violation.
 
 ### A11Y-3: Keyboard access (SC 2.1.1, 2.1.2, 2.4.3)
 
@@ -66,7 +66,10 @@ inventing a verdict.
   `0` or `-1`; overlays can be dismissed with Escape.
 - **Violation:** A mouse/touch-only handler (`onclick`, `onmousedown`,
   hover-only reveal) on an element keyboard users cannot reach or activate;
-  a positive `tabindex`; a widget that captures focus with no keyboard exit.
+  a widget that captures focus with no keyboard exit. A positive `tabindex` is
+    a review signal: report a violation only if the resulting sequential focus
+    order fails to preserve meaning or operability; otherwise treat it as
+    advisory, or request runtime verification if order is unclear; a widget that captures focus with no keyboard exit.
 
 ### A11Y-4: Focus visibility and management (SC 2.4.7, 2.4.11)
 
@@ -88,6 +91,8 @@ inventing a verdict.
   `aria-labelledby`; error messages are rendered as text and linked via
   `aria-describedby` with `aria-invalid` set; personal-data fields carry
   `autocomplete` tokens.
+  - **Violation:** An eligible personal-data field omits `autocomplete` or uses
+    an incorrect or unrecognized input-purpose token.
 - **Violation:** A form control is added or changed with no programmatic
   label (placeholder alone is not a label); validation errors are shown only
   visually (color/border/toast) with no text associated to the field.
@@ -102,12 +107,17 @@ inventing a verdict.
   captioning pipeline).
 - **Violation:** `autoplay` media without controls or muting; a carousel or
   animation with no pause; a video element added with no captions track and
-  no caption story.
+  prerecorded synchronized video containing audio added without captions.
+    Clearly labeled media alternatives for equivalent text, and silent/purely
+    visual video, are exempt from the captions check. If audio or an exemption
+    cannot be established from the diff, request advisory runtime/content
+    verification rather than asserting a violation.
 
 ### A11Y-7: Page language and title (SC 3.1.1, 3.1.2, 2.4.2)
 
 - **Objective:** Documents declare their language and have descriptive
-  titles. Applies only when the diff touches page shells, layouts, or
+  titles. Document language and title checks apply when the diff touches page shells,
+    layouts, or
   document templates.
 - **Compliant:** `<html lang="...">` present and correct; `<title>`
   describes the page; inline language changes use `lang` on the element.
@@ -122,9 +132,24 @@ inventing a verdict.
   literal values in the changed code meet the ratios.
 - **Violation:** Both colors of a pair are visible as literals in the diff
   (same rule, same component, or an explicit token pair) and the computed
-  ratio fails. If either side of the pair is not determinable from the diff
+  ratio fails, except for inactive controls, logos, decorative/incidental text,
+  or nonessential graphics; non-text contrast applies only to meaningful
+  controls, states, or graphics. If either side is not determinable from the
+  diff, report advisory runtime verification instead. If either side of the pair is not determinable from the diff
   (inheritance, theme variables, images), do NOT guess: report the pair as
   advisory for runtime verification instead.
+
+### A11Y-9: Label in name (SC 2.5.3)
+
+- **Objective:** A visible label is included in the accessible name.
+- **Violation:** A control's `aria-label` or equivalent accessible name omits
+  or contradicts its visible label text.
+
+### A11Y-10: Status messages (SC 4.1.3)
+
+- **Objective:** Status updates are programmatically exposed without moving focus.
+- **Violation:** A non-form status update is added with no live-region or
+  equivalent programmatic announcement.
 
 ## How to review
 
@@ -145,7 +170,7 @@ inventing a verdict.
    - Native interactive elements (`<button>`, `<a href>`, `<input>`) already
      provide role and keyboard support; do not demand redundant ARIA on
      them.
-   - A11Y-7 fires only on document shells/templates, never on fragments or
+   - A11Y-7 fires only on document shells/templates, but language-of-parts checks are not suppressed on fragments or
      components.
    - A11Y-8 findings require both literal colors in the diff; anything less
      is advisory, clearly labeled.
