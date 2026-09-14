@@ -1,6 +1,6 @@
 ---
 name: accessibility-review
-description: Use when a PR diff touches UI code - HTML, JSX/TSX, Vue/Svelte/Angular templates, CSS, or mobile view code. Enforces the WCAG 2.2 AA success criteria that are checkable in a diff - text alternatives, programmatic labels, name/role/value on custom widgets, keyboard access, focus visibility and management, autoplay media, page language and title, label-in-name, status messages - reporting per-rule per-file coverage so an unevaluated rule is never a silent skip. Skip for diffs with no user-facing UI code (backend, docs, config, build scripts).
+description: Use when a PR diff touches UI code - HTML, JSX/TSX, Vue/Svelte/Angular templates, CSS, or mobile view code. Enforces the WCAG 2.2 AA success criteria that are checkable in a diff - text alternatives, semantic structure, programmatic labels, name/role/value on custom widgets, keyboard access, focus visibility and management, color-only information, link purpose, autoplay media, pointer alternatives and target size, predictable interactions, page language and title, label-in-name, status messages - reporting per-rule per-file coverage so an unevaluated rule is never a silent skip. Skip for diffs with no user-facing UI code (backend, docs, config, build scripts).
 license: Apache-2.0
 metadata:
   author: PR Agent Pro Team
@@ -28,6 +28,11 @@ the result. Those need a runtime scanner (axe-core, Pa11y, SiteImprove,
 Lighthouse) and human assistive-technology testing. When a finding depends on
 rendered state you cannot see, say so and mark it advisory instead of
 inventing a verdict.
+
+For the same reason, this skill never claims to have run a CLI tool (axe,
+pa11y, lighthouse, a contrast checker): the review agent evaluates the diff
+without executing anything. Every rule below is stated so an LLM can verify
+it from source alone.
 
 ## The rules
 
@@ -162,6 +167,66 @@ inventing a verdict.
 - **Violation:** Changed code adds a visual-only status message with no
   live-region or equivalent programmatic announcement and no focus move.
 
+### A11Y-11: Semantic structure (SC 1.3.1)
+
+- **Objective:** Structure and relationships visible on screen are expressed
+  in markup.
+- **Compliant:** Headings use `<h1>`-`<h6>` without skipping levels within
+  the changed content; lists use `<ul>`/`<ol>`/`<dl>`; data tables have
+  `<th>` with `scope` (or `headers`); grouped nav/content uses landmarks or
+  list markup.
+- **Violation:** Changed code adds heading-styled text as a plain
+  `<div>`/`<span>`, a visual list built from bare divs, a data table without
+  header cells, or a heading level that skips (h1 to h3) within the diff's
+  own structure.
+
+### A11Y-12: Color-only information (SC 1.4.1, 1.3.3)
+
+- **Objective:** Color, shape, or position is never the only carrier of
+  information or instructions.
+- **Compliant:** State changes pair color with text, an icon, underline, or
+  pattern; instructions reference labels ("select Submit"), not only
+  sensory traits.
+- **Violation:** Changed code conveys a state purely by class/style color
+  swap with no text or non-color indicator (links distinguished by color
+  alone, chart series by color alone), or adds instruction text that relies
+  solely on shape/color/position ("click the green button on the right").
+
+### A11Y-13: Link and button purpose (SC 2.4.4, 2.4.6)
+
+- **Objective:** Link and button text describes its target or action, in
+  context.
+- **Compliant:** Link text, or its programmatically associated context
+  (`aria-label`, surrounding list item/heading), identifies the purpose.
+- **Violation:** Changed code adds "click here" / "read more" / "learn
+  more" links or generic button labels with no programmatic context that
+  disambiguates them.
+
+### A11Y-14: Pointer alternatives and target size (SC 2.5.7, 2.5.8)
+
+- **Objective:** Dragging is never the only way to perform an action, and
+  pointer targets are at least 24x24 CSS pixels or adequately spaced.
+- **Compliant:** Drag-to-reorder/resize/pan ships with a single-pointer or
+  keyboard alternative (buttons, menu, input); interactive elements whose
+  literal dimensions appear in the changed code are >= 24x24 px, or spacing
+  compensates; inline text links are exempt.
+- **Violation:** Changed code adds a drag-only interaction with no
+  alternative, or an interactive target whose literal CSS size in the diff
+  is under 24x24 px without the spacing exception. As with A11Y-8, sizes not
+  determinable from the diff are advisory, never guessed.
+
+### A11Y-15: Predictable interactions (SC 3.2.1, 3.2.2)
+
+- **Objective:** Focusing or filling a control never causes an unexpected
+  context change.
+- **Compliant:** Navigation and submission run from explicit activation
+  (click/Enter on a button); a control that auto-triggers change warns the
+  user in advance.
+- **Violation:** Changed code submits a form or navigates from an
+  `onChange`/`onBlur`/`onFocus` handler (select-triggered navigation,
+  auto-submit on last field) with no explicit user activation or prior
+  warning.
+
 ## How to review
 
 1. Evaluate EVERY rule against EVERY changed UI file. Do not sample.
@@ -172,8 +237,8 @@ inventing a verdict.
    non-UI), report that explicitly with the reason. An unevaluated rule is
    itself a finding, never a silent skip.
 4. End with a coverage summary reporting the rule x file grid: for each
-   changed UI file, which of the ten rules were evaluated and which were
-   skipped and why, then the violation count. "10 rules evaluated" without
+   changed UI file, which of the fifteen rules were evaluated and which were
+   skipped and why, then the violation count. "15 rules evaluated" without
    naming the files it covered is not a coverage summary.
 5. Apply a false-positive gate last, per rule:
    - `alt=""` or `aria-hidden="true"` on a genuinely decorative image is
@@ -185,7 +250,16 @@ inventing a verdict.
      never on fragments or components; its language-of-parts check is not
      suppressed there.
    - A11Y-8 findings require both literal colors in the diff; anything less
-     is advisory, clearly labeled.
+     is advisory, clearly labeled. Same for A11Y-14 target sizes.
+   - A11Y-12: an underline, icon, text change, or ARIA state accompanying the
+     color swap satisfies the rule; do not demand a second indicator beyond
+     one non-color cue.
+   - A11Y-13: generic link text is compliant when its accessible name or
+     enclosing list item/heading disambiguates it; check the surrounding
+     changed markup before flagging.
+   - A11Y-15 fires on context CHANGES (navigation, submission, focus moves),
+     not on ordinary controlled-input state updates (`onChange` setState is
+     fine).
    - Storybook stories, test files, and fixtures: report findings as
      advisory context, not violations, unless the file ships to users.
    Say so whenever you drop a finding, with which clause let it go.
