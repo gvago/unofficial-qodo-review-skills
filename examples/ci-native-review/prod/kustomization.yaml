@@ -9,4 +9,4 @@ patches:
     patch: |-
       - op: replace
         path: /spec/type
-        value: ClusterIP
+        value: LoadBalancer
