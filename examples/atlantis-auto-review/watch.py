@@ -96,9 +96,17 @@ def complete_review(payload):
     meta = payload.get('meta', {})
     if (payload.get('error') or not isinstance(payload.get('findings'), list)
             or meta.get('coverage', {}).get('complete') is not True
-            or payload.get('finding_state', {}).get('complete') is not True
             or meta.get('analysis', {}).get('mode') != 'full'):
         raise ValueError('Review is failed, incomplete or reused, not a fresh completed assessment')
+
+
+def review_key(plan_digest, base, config):
+    value = {'plans': plan_digest, 'base': base, 'config': config}
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+
+class TerminalReviewError(RuntimeError):
+    """Stop instead of endlessly collecting a rejected terminal operation."""
 
 
 def snapshot(config):
@@ -108,20 +116,28 @@ def snapshot(config):
     comments = comments_for(config['repo'], config['pr'])
     plans, key = select_plans(comments, pr['head']['sha'], config['author_id'], config['projects'])
     # Include base changes: the review input changes even if plans/head are unchanged.
-    key = hashlib.sha256((key + pr['base']['sha']).encode()).hexdigest()
+    key = review_key(key, pr['base']['sha'], config)
     return pr, comments, plans, key
 
 
 def collect(qodo, operation, checkout, output, deadline):
     while time.monotonic() < deadline:
         result = run([qodo, 'review', 'status', operation, '--json'], cwd=checkout,
-                     timeout=120, accepted=(0, 2))
+                     timeout=120, accepted=(0, 1, 2))
+        if result.returncode == 1:
+            raise TerminalReviewError('Review status failed; stopping for explicit recovery')
         if result.returncode == 2:
             time.sleep(10)
             continue
         payload = object_output(result.stdout)
         (output / 'review.json').write_text(json.dumps(payload, indent=2))
-        complete_review(payload)
+        try:
+            complete_review(payload)
+        except ValueError as error:
+            raise TerminalReviewError(
+                'Terminal review rejected; saved evidence retained. '
+                'Resolve the cause and use a fresh state directory for an explicit retry.'
+            ) from error
         return payload
     raise ValueError('Review timed out; no clean result or completed state recorded')
 
@@ -133,8 +149,12 @@ def render(payload, pr, plans, key, operation):
             f'Qodo operation: `{operation}`', 'Analysis: fresh full review.',
             'Plans consumed:']
     body += [f"- {plan['html_url']} (comment {plan['id']}, updated {plan['updated_at']})" for plan in plans]
+    history_complete = payload.get('finding_state', {}).get('complete') is True
+    if not history_complete:
+        body += ['', '**Prior-finding history is incomplete. These are this run\'s findings only; '
+                 'this result does not establish that earlier findings are resolved or that the PR is clean.**']
     findings = payload['findings']
-    body += ['', f'### Findings ({len(findings)})']
+    body += ['', f'### Findings returned in this run ({len(findings)})']
     for finding in findings:
         body += ['', f"#### {finding.get('title', 'Finding')}", str(finding.get('description', ''))]
     if not findings:

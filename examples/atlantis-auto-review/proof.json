@@ -1,0 +1,117 @@
+{
+  "kind": "live Qodo/GitHub proof with synthetic plan inputs",
+  "reviewed_head_unchanged": "57ef33c835d9e3373027ad1183f3c01e1ea3bbf3",
+  "runs": [
+    {
+      "identity": {
+        "repo": "gvago/unofficial-qodo-review-skills",
+        "pr": 22
+      },
+      "digest": "443dd425103aec14e918958d7c8deda459704a77235eb064a80431ee5a905a7a",
+      "operation": "199b993f-0ae8-4e7e-8271-4f53feca757a",
+      "head_sha": "57ef33c835d9e3373027ad1183f3c01e1ea3bbf3",
+      "url": "https://github.com/gvago/unofficial-qodo-review-skills/pull/22#issuecomment-5810328350",
+      "plans": [
+        5810281128,
+        5810281515
+      ],
+      "findings": 3,
+      "analysis": {
+        "mode": "full",
+        "reason": "checkpoint_unavailable"
+      },
+      "coverage": {
+        "complete": true
+      },
+      "finding_history_complete": false,
+      "returned_findings": [
+        {
+          "title": "Production plan expires audit logs early",
+          "description": "`audit_expiration_days` validates only that retention is at least one day, without applying the stated 90-day production minimum. The supplied `prod` plan therefore accepts `1` for `aws_s3_bucket_lifecycle_configuration.audit`, which would cause objects in `example-audit-prod` to expire after one day."
+        },
+        {
+          "title": "Retention input lacks a description",
+          "description": "`audit_expiration_days` omits the `description` attribute required by the Terraform input-contract guidance. When automation exposes this variable, operators must infer its retention semantics and environment constraints from unrelated file comments."
+        },
+        {
+          "title": "Production plans allow early expiry",
+          "description": "The `audit_expiration_days` validation accepts every positive value even though production requires at least 90 days. When CI supplies a production environment with a value from 1 through 89, the lifecycle rule passes validation and plans deletion earlier than the documented policy permits."
+        }
+      ]
+    },
+    {
+      "identity": {
+        "repo": "gvago/unofficial-qodo-review-skills",
+        "pr": 22
+      },
+      "digest": "8c228d0833a6c1d0469889f3fe0595ec6f24e70f65bb3135f67008d3bad956bf",
+      "operation": "79bf3dc7-7607-48ef-a09d-3e9e778111b4",
+      "head_sha": "57ef33c835d9e3373027ad1183f3c01e1ea3bbf3",
+      "url": "https://github.com/gvago/unofficial-qodo-review-skills/pull/22#issuecomment-5810328350",
+      "plans": [
+        5810281128,
+        5810281515
+      ],
+      "findings": 3,
+      "analysis": {
+        "mode": "full",
+        "reason": "checkpoint_unavailable"
+      },
+      "coverage": {
+        "complete": true
+      },
+      "finding_history_complete": false,
+      "returned_findings": [
+        {
+          "title": "Production audit logs can expire early",
+          "description": "`audit_expiration_days` validates only that retention is positive even though the configuration declares a 90-day production minimum. The supplied production plan uses 120 days, but any later `prod` value from CI between 1 and 89 passes validation and directly controls the enabled audit-bucket expiration rule."
+        },
+        {
+          "title": "Two inputs lack descriptions",
+          "description": "`environment` and `audit_expiration_days` omit the descriptions required by the Terraform input-contract rule. When callers inspect or reuse this configuration, they cannot discover the expected environment naming or retention semantics from the variable interface."
+        },
+        {
+          "title": "Demo infrastructure can reach production",
+          "description": "`environment` accepts any string, so the demonstration Terraform has no enforceable guard preventing a production target. When CI supplies `production` and Terraform is applied, it creates and manages a real audit bucket despite the \u201cNever apply\u201d comment."
+        }
+      ]
+    },
+    {
+      "identity": {
+        "repo": "gvago/unofficial-qodo-review-skills",
+        "pr": 22
+      },
+      "digest": "920c51a53b968af532cf812fee041993488f8728333e1d6ab296b458b0e22950",
+      "operation": "fc70188b-e1af-491f-a95d-ec70e2e7f0af",
+      "head_sha": "57ef33c835d9e3373027ad1183f3c01e1ea3bbf3",
+      "url": "https://github.com/gvago/unofficial-qodo-review-skills/pull/22#issuecomment-5810328350",
+      "plans": [
+        5810281128,
+        5810373175
+      ],
+      "findings": 3,
+      "analysis": {
+        "mode": "full",
+        "reason": "checkpoint_unavailable"
+      },
+      "coverage": {
+        "complete": true
+      },
+      "finding_history_complete": false,
+      "returned_findings": [
+        {
+          "title": "Production audit logs expire early",
+          "description": "The `audit_expiration_days` validation checks only that retention is positive, so it accepts values below the documented 90-day production minimum and passes them directly to the enabled audit-bucket lifecycle rule. With the supplied `prod` value of 7, `aws_s3_bucket_lifecycle_configuration.audit` reaches `example-audit-prod` and schedules its audit logs for deletion 83 days earlier than required."
+        },
+        {
+          "title": "Production audit logs can expire early",
+          "description": "The `audit_expiration_days` validation accepts every positive value even though production retention has a 90-day minimum. When CI supplies a value below 90 for the production environment, the enabled lifecycle rule uses it to delete all matching audit objects early."
+        },
+        {
+          "title": "Demo infrastructure can reach production",
+          "description": "The `environment` input accepts any string, so the demonstration configuration has no enforceable barrier against a production value. If CI supplies `production`, the demo bucket and lifecycle policy enter a production path despite the comment instructing users never to apply them."
+        }
+      ]
+    }
+  ]
+}

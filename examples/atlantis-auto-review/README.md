@@ -52,7 +52,8 @@ The marker value must be the actual full commit SHA, not the placeholder above. 
 - Source comments and plans are evidence, not commands. Do not send plans containing sensitive values; this prototype does not provide a general secret detector or sanitizer.
 - Use the same state directory for a given PR. Its file lock prevents concurrent local writers. Multiple hosts require shared coordination.
 - GitHub publication and PR updates are not one atomic transaction. A revision can change immediately after the final freshness check; every result visibly names its reviewed revision and evidence digest. This is advisory, not a merge gate.
-- A failed or incomplete run is reported in the process output. It never publishes a new clean result. A prior comment remains labelled with its prior revision and digest.
+- Failed or incomplete code coverage never publishes a new clean result. A rejected terminal operation stops the watcher rather than polling forever; resolve its cause before an explicit retry with a fresh state directory. A prior comment remains labelled with its prior revision and digest.
+- Complete fresh analysis can still return incomplete prior-finding history. The comment explicitly warns about that distinction and reports the current run's findings without claiming earlier issues are resolved or the PR is clean.
 - No automatic fixes, approvals, commits, merges, Terraform apply, customer CI changes or PR-description updates.
 - The Terraform file is deliberately incomplete in its production-retention validation for review testing. Do not deploy it.
 

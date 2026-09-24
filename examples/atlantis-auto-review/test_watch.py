@@ -1,6 +1,11 @@
 import unittest
 from copy import deepcopy
-from watch import select_plans, complete_review
+import tempfile
+import time
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+from watch import select_plans, complete_review, review_key, collect, TerminalReviewError, render
 
 HEAD = 'a' * 40
 PROJECTS = [('dev', 'infra/dev', 'default'), ('prod', 'infra/prod', 'default')]
@@ -50,10 +55,31 @@ class SelectionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             select_plans(comments, HEAD, 123, PROJECTS)
 
+    def test_scope_changes_invalidate_cached_review(self):
+        self.assertNotEqual(review_key('plans', HEAD, {'paths': ['a/']}),
+                            review_key('plans', HEAD, {'paths': ['b/']}))
+
+    def test_terminal_rejection_stops_instead_of_polling_forever(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch('watch.run', return_value=SimpleNamespace(returncode=0, stdout='{}')) as runner:
+                with self.assertRaises(TerminalReviewError):
+                    collect('qodo', 'operation', directory, Path(directory), time.monotonic()+10)
+                self.assertEqual(runner.call_count, 1)
+
+    def test_incomplete_history_is_visible_not_a_clean_claim(self):
+        body = render({'findings': [], 'finding_state': {'complete': False}},
+                      {'head': {'sha': HEAD}}, [], 'digest', 'operation')
+        self.assertIn('Prior-finding history is incomplete', body)
+        self.assertIn('does not establish', body)
+
     def test_complete_fresh_result_required(self):
         valid = {'findings': [], 'meta': {'coverage': {'complete': True}, 'analysis': {'mode': 'full'}},
                  'finding_state': {'complete': True}}
         complete_review(valid)
+        # Fresh findings remain reportable when prior-finding history is unavailable.
+        incomplete_history = deepcopy(valid)
+        incomplete_history['finding_state']['complete'] = False
+        complete_review(incomplete_history)
         for path, value in [('coverage', {'complete': False}), ('analysis', {'mode': 'reused'})]:
             result = deepcopy(valid)
             result['meta'][path] = value
