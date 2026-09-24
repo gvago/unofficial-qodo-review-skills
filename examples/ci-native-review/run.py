@@ -7,6 +7,52 @@ import subprocess
 import sys
 import secrets
 import tempfile
+import time
+
+QODO_BOT = 'qodo-for-gvago[bot]'
+
+
+def comments(repo, number):
+    result = subprocess.run(['gh', 'api', f'repos/{repo}/issues/{number}/comments',
+                             '--paginate', '--slurp'], text=True, capture_output=True, check=True)
+    return [comment for page in json.loads(result.stdout) for comment in page]
+
+
+def completed_review(comment, trigger, head, previous):
+    body = comment.get('body', '')
+    return (comment.get('user', {}).get('login') == QODO_BOT
+            and comment.get('user', {}).get('type') == 'Bot'
+            and body.startswith('<h3>Code Review by Qodo</h3>')
+            and f'/commit/{head}' in body
+            and comment['updated_at'] > trigger['created_at']
+            and previous.get(str(comment['id'])) != comment['updated_at'])
+
+
+def cleanup(repo, number, head, trigger, previous, output):
+    endpoint = f"repos/{repo}/issues/comments/{trigger['id']}"
+    deadline = time.monotonic() + 420
+    while time.monotonic() < deadline:
+        if github(f'repos/{repo}/pulls/{number}')['head']['sha'] != head:
+            raise ValueError('PR changed; retaining trigger for diagnosis')
+        matches = [c for c in comments(repo, number)
+                   if completed_review(c, trigger, head, previous)]
+        if matches:
+            actual = github(endpoint)
+            if (actual['user']['login'] != 'github-actions[bot]'
+                    or actual['body'] != trigger['body']):
+                raise ValueError('Trigger changed or is not Actions-owned; refusing deletion')
+            subprocess.run(['gh', 'api', endpoint, '--method', 'DELETE'], check=True,
+                           text=True, capture_output=True)
+            remaining = comments(repo, number)
+            if any(c['id'] == trigger['id'] for c in remaining):
+                raise ValueError('Deleted trigger is still present')
+            receipt = {'deleted_trigger': trigger['html_url'],
+                       'review': matches[0]['html_url'], 'head': head}
+            (output / 'cleanup.json').write_text(json.dumps(receipt, indent=2))
+            print(json.dumps(receipt), flush=True)
+            return
+        time.sleep(10)
+    raise TimeoutError('No fresh completed Qodo comment; trigger retained')
 
 
 def github(endpoint, body=None):
@@ -27,8 +73,14 @@ def review_command(evidence):
                     + json.dumps(evidence, sort_keys=True))
     if len(instructions) > 4800:
         raise ValueError('Evidence exceeds review instruction budget')
-    return ('/agentic_review full_review --review_agent.issues_user_guidelines=' + shlex.quote(instructions)
-            + ' --review_agent.compliance_user_guidelines=' + shlex.quote(instructions))
+    # Double quoting also survives Qodo's command tokenizer, unlike shell single quotes.
+    value = '"' + instructions.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    return ('/agentic_review full_review\n\n'
+            '<details>\n<summary>CI deployment evidence (development + production)</summary>\n\n'
+            '<details>\n<summary>Review context</summary>\n\n'
+            '--review_agent.issues_user_guidelines=' + value + '\n'
+            '--review_agent.compliance_user_guidelines=' + value + '\n\n'
+            '</details>\n</details>')
 
 
 def main():
@@ -58,12 +110,15 @@ def main():
     command = review_command(evidence)
     if github(f'repos/{repo}/pulls/{number}')['head']['sha'] != head:
         raise ValueError('PR changed during rendering; refusing stale review trigger')
+    previous = {str(c['id']): c['updated_at'] for c in comments(repo, number)}
+    (output / 'trigger.md').write_text(command)
     posted = github(f'repos/{repo}/issues/{number}/comments', {'body': command})
     actual = github(f"repos/{repo}/issues/comments/{posted['id']}")
     if actual['body'] != command:
         raise ValueError('Trigger read-back mismatch')
     (output / 'trigger.json').write_text(json.dumps({'url': actual['html_url'], 'head': head}))
-    print(f"Generated both environments. Native review requested: {actual['html_url']}")
+    print(f"Generated both environments. Native review requested: {actual['html_url']}", flush=True)
+    cleanup(repo, number, head, actual, previous, output)
 
 
 if __name__ == '__main__':
@@ -71,7 +126,22 @@ if __name__ == '__main__':
         evidence = {'output': 'quotes: \' " and $() are data'}
         command = shlex.split(review_command(evidence))
         assert command[:2] == ['/agentic_review', 'full_review']
-        assert json.dumps(evidence, sort_keys=True) in command[2]
+        flags = [arg for arg in command if arg.startswith('--review_agent.')]
+        assert len(flags) == 2 and all(json.dumps(evidence, sort_keys=True) in arg for arg in flags)
+        lexer = shlex.shlex(review_command({'value': 'quotes " and $()'}).replace("'", "\\'"), posix=True)
+        lexer.whitespace_split = True
+        lexer.commenters = ''
+        assert len([arg for arg in lexer if arg.startswith('--review_agent.')]) == 2
+        head = 'a' * 40
+        trigger = {'created_at': '2026-01-01T00:00:00Z'}
+        review = {'id': 1, 'user': {'login': QODO_BOT, 'type': 'Bot'},
+                  'body': '<h3>Code Review by Qodo</h3>\n<!-- /commit/' + head + ' -->',
+                  'updated_at': '2026-01-01T00:00:01Z'}
+        assert completed_review(review, trigger, head, {})
+        assert not completed_review(review, trigger, 'b' * 40, {})
+        assert not completed_review(review, trigger, head, {'1': review['updated_at']})
+        assert not completed_review(dict(review, user={'login': 'gvago', 'type': 'User'}), trigger, head, {})
+        assert not completed_review(dict(review, body='Review in progress'), trigger, head, {})
         try:
             review_command({'output': 'x' * 5000})
         except ValueError:
