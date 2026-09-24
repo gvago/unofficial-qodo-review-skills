@@ -1,2 +1,4 @@
 [review_agent]
 enable_skills_agent = true
+[github_app]
+ignore_bot_pr = false
