@@ -1,0 +1,12 @@
+resources:
+  - ../base
+namePrefix: prod-
+namespace: production
+patches:
+  - target:
+      kind: Service
+      name: audit-export
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: ClusterIP
