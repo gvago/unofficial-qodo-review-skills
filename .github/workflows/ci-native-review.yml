@@ -30,6 +30,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: python3 examples/ci-native-review/run.py
       - name: Preserve generated output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: rendered-environments-${{ github.run_attempt }}

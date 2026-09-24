@@ -4,7 +4,9 @@ GitHub Actions renders the development and production Kustomize overlays, preser
 
 The audit export service has no application authentication and must remain private in production. The production overlay deliberately contains a review-test defect. No Kubernetes cluster is contacted and nothing is deployed.
 
-This example validates CI output ingestion and native review delivery. It is not an Atlantis integration. Re-running the job generates fresh output and requests another full review at the same commit.
+The renderer assigns fresh resource-name suffixes and ports on each CI run. These values are not committed, so findings that cite them demonstrate consumption of generated output. Re-running the job changes this evidence without a source commit and requests another full review.
+
+This is a CI-to-Qodo example, not an Atlantis integration. It does not deploy infrastructure. The final head check and review request are separate API calls, so this advisory example is not an atomic merge gate; the request tells Qodo to reject evidence for another revision.
 
 Requires Qodo installed on the repository, GitHub Actions comment-write permission, and kubectl on the runner. The example is restricted to same-repository PRs authored by the owner. No additional API key is used.
 
