@@ -2,3 +2,25 @@
 enable_skills_agent = true
 [github_app]
 ignore_bot_pr = false
+
+[review_agent_ux]
+display_mode = "default"
+findings_group_by = "action_level"
+finding_overflow_count = 0
+resolved_overflow_count = 0
+link_findings_to_inline_comments = false
+render_description = true
+render_code = true
+render_evidence = true
+render_recommendation = true
+render_prompt = true
+expand_description = false
+expand_code = false
+expand_evidence = false
+expand_recommendation = false
+expand_prompt = false
+
+[review_agent_ux.findings_overflow]
+action_required = 0
+remediation_recommended = 0
+informational = 0
