@@ -1,0 +1,37 @@
+name: CI output to native Qodo review
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'examples/ci-native-review/**'
+      - '.github/workflows/ci-native-review.yml'
+permissions:
+  contents: read
+  pull-requests: write
+concurrency:
+  group: ci-native-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  render-and-review:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login == 'gvago'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Run local checks
+        run: python3 examples/ci-native-review/run.py --test
+      - name: Render both environments and trigger Qodo
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 examples/ci-native-review/run.py
+      - name: Preserve generated output
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-environments-${{ github.run_attempt }}
+          path: ci-output/
+          if-no-files-found: error
