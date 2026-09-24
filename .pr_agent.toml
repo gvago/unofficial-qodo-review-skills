@@ -2,6 +2,9 @@
 enable_skills_agent = true
 [github_app]
 ignore_bot_pr = false
+pr_commands = ["/agentic_describe"]
+handle_push_trigger = false
+push_commands = []
 
 [review_agent_ux]
 display_mode = "default"
