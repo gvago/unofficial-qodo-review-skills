@@ -101,18 +101,28 @@ def complete_review(payload):
         raise ValueError('Review is failed, incomplete or reused, not a fresh completed assessment')
 
 
+def review_paths(config):
+    paths = config.get('paths', [])
+    if not isinstance(paths, list) or any(not isinstance(p, str) or p.startswith('-') for p in paths):
+        raise ValueError('Invalid trusted path filters')
+    return paths
+
+
 def snapshot(config):
+    paths = review_paths(config)
     pr = api(f"repos/{config['repo']}/pulls/{config['pr']}")
     if pr['state'] != 'open' or pr['head']['repo']['full_name'] != config['repo']:
         raise ValueError('Example accepts open same-repository PRs only')
     comments = comments_for(config['repo'], config['pr'])
     plans, key = select_plans(comments, pr['head']['sha'], config['author_id'], config['projects'])
-    # Include base changes: the review input changes even if plans/head are unchanged.
-    key = hashlib.sha256((key + pr['base']['sha']).encode()).hexdigest()
+    # Include base changes and review scope: both change the review input.
+    key = hashlib.sha256(json.dumps(
+        {'digest': key, 'base': pr['base']['sha'], 'paths': paths},
+        sort_keys=True).encode()).hexdigest()
     return pr, comments, plans, key
 
 
-def collect(qodo, operation, checkout, output, deadline):
+def collect(qodo, operation, checkout, output, deadline, operation_file):
     while time.monotonic() < deadline:
         result = run([qodo, 'review', 'status', operation, '--json'], cwd=checkout,
                      timeout=120, accepted=(0, 2))
@@ -121,7 +131,13 @@ def collect(qodo, operation, checkout, output, deadline):
             continue
         payload = object_output(result.stdout)
         (output / 'review.json').write_text(json.dumps(payload, indent=2))
-        complete_review(payload)
+        try:
+            complete_review(payload)
+        except ValueError:
+            # A terminally rejected result must not poison future attempts.
+            if operation_file.exists():
+                operation_file.unlink()
+            raise
         return payload
     raise ValueError('Review timed out; no clean result or completed state recorded')
 
@@ -174,9 +190,7 @@ def process(config, state_dir, qodo, deadline):
     # Only data is read from the PR; no Terraform, hooks, builds or PR scripts execute.
     command = [qodo, '--no-onboarding', 'review', '--base', pr['base']['sha'],
                '--context-file', str(context_path), '--full', '--async', '--json']
-    paths = config.get('paths', [])
-    if not isinstance(paths, list) or any(not isinstance(p, str) or p.startswith('-') for p in paths):
-        raise ValueError('Invalid trusted path filters')
+    paths = review_paths(config)
     operation_file = output / 'operation.json'
     if operation_file.exists():
         operation = json.loads(operation_file.read_text())['operation_id']
@@ -187,7 +201,7 @@ def process(config, state_dir, qodo, deadline):
             raise ValueError('No operation ID returned')
         operation_file.write_text(json.dumps({'operation_id': operation}))
     print(json.dumps({'event': 'review_started', 'operation': operation, 'digest': key}), flush=True)
-    payload = collect(qodo, operation, checkout, output, deadline)
+    payload = collect(qodo, operation, checkout, output, deadline, operation_file)
     fresh_pr, fresh_comments, _, fresh_key = snapshot(config)
     if fresh_key != key:
         raise ValueError('Plans/revision changed during review; stale result not published')
