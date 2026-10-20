@@ -41,7 +41,34 @@
         "evals/compiler-boundary/vue35-optout.package.json",
         "evals/compiler-boundary/vue35-optout.vite.config.js"
       ],
-      "expected_output": "No VUE-4 for compiler 3.5 transform enabled or 3.4 explicit opt-in. VUE-4 for 3.5 explicit opt-out. Unknown version, missing compiler or ^3.4.0 without lock/options yields coverage gap rather than invented snapshot verdict. Ordinary reactive primitive destructure is unaffected by props transform."
+      "expected_output": "No VUE-4 for compiler 3.5 with default config or 3.4 explicit opt-in. VUE-4 for 3.5 explicit opt-out. Cite the matching manifest/compiler option and report coverage."
+    },
+    {
+      "id": 4,
+      "prompt": "Review Component.vue in the range package. No lockfile, compiler config or other version evidence is available.",
+      "files": [
+        "evals/uncertainty/range/package.json",
+        "evals/uncertainty/range/Component.vue"
+      ],
+      "expected_output": "VUE-4 is unevaluated with explicit missing version/compiler/config evidence. Do not claim a snapshot violation or recommend a gated API. Other rules receive their own evaluated or not-applicable status."
+    },
+    {
+      "id": 5,
+      "prompt": "Review Component.vue in the missing-compiler package. No lockfile, compiler config or other version evidence is available.",
+      "files": [
+        "evals/uncertainty/missing-compiler/package.json",
+        "evals/uncertainty/missing-compiler/Component.vue"
+      ],
+      "expected_output": "VUE-4 is unevaluated with explicit missing version/compiler/config evidence. Do not claim a snapshot violation or recommend a gated API. Other rules receive their own evaluated or not-applicable status."
+    },
+    {
+      "id": 6,
+      "prompt": "Review Component.vue in the unknown package. No lockfile, compiler config or other version evidence is available.",
+      "files": [
+        "evals/uncertainty/unknown/package.json",
+        "evals/uncertainty/unknown/Component.vue"
+      ],
+      "expected_output": "VUE-4 is unevaluated with explicit missing version/compiler/config evidence. Do not claim a snapshot violation or recommend a gated API. Other rules receive their own evaluated or not-applicable status."
     }
   ]
 }

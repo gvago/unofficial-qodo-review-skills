@@ -27,7 +27,7 @@
       "id": 3,
       "prompt": "Review reservation.py with repository path scripts/reservation.py, outside every hotspot.",
       "files": [
-        "evals/violations/src/booking/reservation.py"
+        "evals/unmatched/scripts/reservation.py"
       ],
       "expected_output": "No HOT findings. All six rules N/A outside globs. No invented analytics or execution."
     }

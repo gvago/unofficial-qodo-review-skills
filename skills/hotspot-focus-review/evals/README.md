@@ -1,8 +1,9 @@
 # Hotspot review evals
 
 These are review inputs and expected outcomes, not executed review results.
-Mount src/payments and src/booking at their indicated repository-relative paths.
-Do not match rules against the enclosing evals directory.
+For cases 1 and 2, mount src/payments and src/booking at their indicated
+repository-relative paths. For case 3, mount evals/unmatched/scripts/reservation.py
+as scripts/reservation.py. Do not match against the enclosing evals directory.
 
 1. violations: unstable retry keys, immediate retries, false payment success,
    missing correlated error log, naive instants and float monetary totals.
