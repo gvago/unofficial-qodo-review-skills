@@ -14,7 +14,7 @@ function reverse() { rows.reverse() }
 </script>
 <template>
   <section><label>Guest<input ref="field" v-model="model"></label><button @click="reverse">Reverse</button>
-    <input v-for="row in rows" :key="row.id" :default-value="row.name" :aria-label="row.name">
+    <input v-for="row in rows" :key="row.id" :value="row.name" :aria-label="row.name">
     <output>{{ total }}</output>
   </section>
 </template>
