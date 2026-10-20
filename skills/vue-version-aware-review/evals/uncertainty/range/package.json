@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vue/compiler-sfc": "^3.4.0"
+  }
+}
