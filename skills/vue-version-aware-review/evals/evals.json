@@ -1,0 +1,47 @@
+{
+  "skill_name": "vue-version-aware-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review added src/components files using package.json and vite.config.js.",
+      "files": [
+        "evals/violations/src/components/BookingList.vue",
+        "evals/violations/src/components/BookingTotal.vue",
+        "evals/violations/src/components/LivePrice.vue",
+        "evals/violations/src/components/Inventory.vue",
+        "evals/violations/src/components/Clock.vue",
+        "evals/violations/src/components/BookingReference.vue",
+        "evals/violations/src/components/ModelInput.vue",
+        "evals/violations/src/components/LegacyTemplateRef.vue",
+        "evals/violations/src/components/PropsRefs.vue",
+        "evals/violations/package.json",
+        "evals/violations/vite.config.js"
+      ],
+      "expected_output": "VUE-1 BookingList alias in v-if; VUE-2 mutable stateful rows keyed by index; VUE-3 BookingTotal direct prop assignment; VUE-4 LivePrice props snapshot and Inventory reactive primitive snapshot; VUE-5 Inventory 50000-entry deep watcher only consumes selectedId; VUE-6 Clock interval/listener lack teardown; VUE-7 BookingReference useId/useTemplateRef unsupported on declared 3.4.38. Cite version source. Zero findings on ModelInput, LegacyTemplateRef, PropsRefs. Coverage names all seven rules."
+    },
+    {
+      "id": 2,
+      "prompt": "Review Component.vue on declared Vue/compiler 3.4.38 with propsDestructure false.",
+      "files": [
+        "evals/clean/Component.vue",
+        "evals/clean/package.json",
+        "evals/clean/vite.config.js"
+      ],
+      "expected_output": "No violations. Stable keys, model assignment, toRefs, legacy ref and teardown are valid. Coverage required."
+    },
+    {
+      "id": 3,
+      "prompt": "Review Component.vue separately with each matching manifest/config pair. Treat pair as owning package.json and vite.config.js.",
+      "files": [
+        "evals/compiler-boundary/Component.vue",
+        "evals/compiler-boundary/vue35.package.json",
+        "evals/compiler-boundary/vue35.vite.config.js",
+        "evals/compiler-boundary/vue34-optin.package.json",
+        "evals/compiler-boundary/vue34-optin.vite.config.js",
+        "evals/compiler-boundary/vue35-optout.package.json",
+        "evals/compiler-boundary/vue35-optout.vite.config.js"
+      ],
+      "expected_output": "No VUE-4 for compiler 3.5 transform enabled or 3.4 explicit opt-in. VUE-4 for 3.5 explicit opt-out. Unknown version, missing compiler or ^3.4.0 without lock/options yields coverage gap rather than invented snapshot verdict. Ordinary reactive primitive destructure is unaffected by props transform."
+    }
+  ]
+}
