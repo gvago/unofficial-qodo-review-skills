@@ -1,0 +1,7 @@
+{
+  "tool": "get_companion_pr",
+  "error": {
+    "code": "ACCESS_DENIED",
+    "message": "Companion repository is inaccessible to this review identity."
+  }
+}

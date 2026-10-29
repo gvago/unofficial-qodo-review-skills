@@ -1,0 +1,12 @@
+{
+  "offers_v2": {
+    "method": "POST",
+    "path": "/v2/offers",
+    "default_nights": 7
+  },
+  "exports_v2": {
+    "method": "POST",
+    "path": "/v2/exports",
+    "format": "csv"
+  }
+}

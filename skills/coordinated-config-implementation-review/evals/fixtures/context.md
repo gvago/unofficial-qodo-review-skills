@@ -1,0 +1,3 @@
+# Offline review inputs
+
+The config change depends on another repository. For cases 1 and 2, companion.py represents the inspected head of an OPEN companion PR linked by ticket DEMO-101; it is not default-branch or deployed code. Config.json represents the config diff. Case 1 is scoped to offers_v2. Case 2 is scoped to both contracts. For case 3, the companion source is deliberately inaccessible: do not read companion.py and report the access limitation instead. These are offline rehearsal inputs, not evidence of live tool access. Live validation requires fresh ticket-linked PRs and actual review receipts.
