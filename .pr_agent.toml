@@ -4,6 +4,7 @@ enable_skill_steering = true
 enable_cross_repo_skill_steering = true
 enable_review_md = true
 enable_cross_repo_agent = true
+additional_repos = ["gvago/qodo-rules-starter:demo/se-89-companion-service"]
 
 [github_app]
 ignore_bot_pr = false
