@@ -35,3 +35,6 @@ informational = 0
 
 [chat_agent.cross_repo_repos]
 "gvago/unofficial-qodo-review-skills" = [{repo = "gvago/qodo-rules-starter", provider = "github", relation = "Coordinated client configuration and service contract examples. Select linked companion PR refs from the reviewed PR description before checking handlers and configuration consumers."}]
+
+[config]
+additional_repos = ["gvago/qodo-rules-starter:demo/se-89-companion-service"]
