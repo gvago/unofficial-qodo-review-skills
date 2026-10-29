@@ -1,0 +1,29 @@
+{
+  "skill_name": "coordinated-config-implementation-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "A config adds a v2 route. An open service PR linked through the same ticket implements its handler and config binding. Review the config.",
+      "expectations": [
+        "Inspect the companion diff and cite actual handler and consumer.",
+        "Describe implemented-but-unmerged code and rollout dependency, not nonexistent implementation."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "A config adds two contracts. Its same-ticket service PR implements only one.",
+      "expectations": [
+        "Retain the concrete missing-contract warning.",
+        "Do not suppress it merely because a companion exists."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "A config refers to another repository, but companion PR reads are denied.",
+      "expectations": [
+        "Describe inaccessible evidence as uncertainty.",
+        "Do not claim implementation is absent or deployed."
+      ]
+    }
+  ]
+}
