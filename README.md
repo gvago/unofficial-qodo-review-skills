@@ -39,6 +39,7 @@ That means a review skill must:
 
 | Skill | Purpose |
 |-------|---------|
+| [`coordinated-config-implementation-review`](skills/coordinated-config-implementation-review/SKILL.md) | Steering lens: inspect linked or same-ticket companion PRs before claiming a cross-repository implementation is missing; retain integration and rollout risks. |
 | [`terraform-review`](skills/terraform-review/SKILL.md) | Flags Terraform/OpenTofu diff issues: identity churn (missing `moved` blocks, `count` index churn), secrets that land in state, unsafe destroy/state ops, version-floor violations, backend antipatterns. Adapted from [antonbabenko/terraform-skill](https://github.com/antonbabenko/terraform-skill) (Apache-2.0). |
 | [`apex-review`](skills/apex-review/SKILL.md) | Flags Salesforce Apex/SOQL diff issues: governor-limit killers (SOQL/DML in loops), missing CRUD/FLS & sharing enforcement, SOQL injection, hardcoded IDs, trigger anti-patterns. Rules derived from the [PMD Apex ruleset](https://github.com/pmd/pmd) (BSD-2). For *writing* SF code, see Salesforce's official [sf-skills](https://github.com/forcedotcom/sf-skills). |
 | [`test-scenario-patterns`](skills/test-scenario-patterns/SKILL.md) | Classifies every added or changed test scenario against an approved pattern catalog (TP-01..TP-06) and always emits a `PATTERN-LEDGER` record, so a clean review still states which pattern each scenario matched. Template catalog; replace with your own patterns. |
