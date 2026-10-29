@@ -3,26 +3,41 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "A config adds a v2 route. An open service PR linked through the same ticket implements its handler and config binding. Review the config.",
+      "prompt": "A config adds a v2 route. An open service PR linked through the same ticket implements its handler and config binding. Review the config. Use the supplied fixtures. Case 1 reviews offers_v2 only; case 2 reviews both contracts; case 3 assumes the explicit inaccessible-companion boundary in context.md.",
       "expectations": [
         "Inspect the companion diff and cite actual handler and consumer.",
         "Describe implemented-but-unmerged code and rollout dependency, not nonexistent implementation."
+      ],
+      "files": [
+        "evals/fixtures/config.json",
+        "evals/fixtures/companion.py",
+        "evals/fixtures/context.md"
       ]
     },
     {
       "id": 2,
-      "prompt": "A config adds two contracts. Its same-ticket service PR implements only one.",
+      "prompt": "A config adds two contracts. Its same-ticket service PR implements only one. Use the supplied fixtures. Case 1 reviews offers_v2 only; case 2 reviews both contracts; case 3 assumes the explicit inaccessible-companion boundary in context.md.",
       "expectations": [
         "Retain the concrete missing-contract warning.",
         "Do not suppress it merely because a companion exists."
+      ],
+      "files": [
+        "evals/fixtures/config.json",
+        "evals/fixtures/companion.py",
+        "evals/fixtures/context.md"
       ]
     },
     {
       "id": 3,
-      "prompt": "A config refers to another repository, but companion PR reads are denied.",
+      "prompt": "A config refers to another repository, but companion PR reads are denied. Use the supplied fixtures. Case 1 reviews offers_v2 only; case 2 reviews both contracts; case 3 assumes the explicit inaccessible-companion boundary in context.md.",
       "expectations": [
         "Describe inaccessible evidence as uncertainty.",
         "Do not claim implementation is absent or deployed."
+      ],
+      "files": [
+        "evals/fixtures/config.json",
+        "evals/fixtures/companion.py",
+        "evals/fixtures/context.md"
       ]
     }
   ]
