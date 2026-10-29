@@ -29,15 +29,14 @@
     },
     {
       "id": 3,
-      "prompt": "A config refers to another repository, but companion PR reads are denied. Use the supplied fixtures. Case 1 reviews offers_v2 only; case 2 reviews both contracts; case 3 assumes the explicit inaccessible-companion boundary in context.md.",
+      "prompt": "Review the supplied config using only the supplied input files. The companion read tool returned access-denied.json; do not assume source availability.",
       "expectations": [
         "Describe inaccessible evidence as uncertainty.",
         "Do not claim implementation is absent or deployed."
       ],
       "files": [
         "evals/fixtures/config.json",
-        "evals/fixtures/companion.py",
-        "evals/fixtures/context.md"
+        "evals/fixtures/access-denied.json"
       ]
     }
   ]
