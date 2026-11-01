@@ -1,0 +1,23 @@
+{
+  "service_repository": "https://github.com/gvago/qodo-rules-starter",
+  "service_module": "examples/coordinated_service/service.py",
+  "contracts": {
+    "offers": {
+      "method": "POST",
+      "path": "/v2/offers"
+    },
+    "exports": {
+      "method": "POST",
+      "path": "/v2/exports"
+    }
+  },
+  "service_config": {
+    "offers_v2": {
+      "default_nights": 7,
+      "search_type": "semantic"
+    },
+    "exports_v2": {
+      "format": "csv"
+    }
+  }
+}
