@@ -1,0 +1,35 @@
+{
+  "skill_name": "hotspot-focus-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review changed src/payments/charge.py and src/booking/*.py. gateway.py is unchanged adapter context.",
+      "files": [
+        "evals/violations/src/payments/charge.py",
+        "evals/violations/src/booking/reservation.py",
+        "evals/violations/src/booking/expiry.py",
+        "evals/violations/src/payments/gateway.py"
+      ],
+      "expected_output": "HOT-1 unstable retry keys; HOT-2 immediate retries; HOT-3 failure returned paid; HOT-4 handled failure without structured correlation/error log; HOT-5 naive datetime persistence/comparison; HOT-6 float monetary total stored. IDs, matching glob, category, exact clause and changed lines required. All six rules covered."
+    },
+    {
+      "id": 2,
+      "prompt": "Review clean payment and booking files.",
+      "files": [
+        "evals/clean/src/payments/charge.py",
+        "evals/clean/src/payments/gateway.py",
+        "evals/clean/src/booking/reservation.py",
+        "evals/clean/src/booking/expiry.py"
+      ],
+      "expected_output": "No HOT findings: stable keys, bounded backoff, log+rethrow, aware instants, Decimal from strings. Coverage required."
+    },
+    {
+      "id": 3,
+      "prompt": "Review reservation.py with repository path scripts/reservation.py, outside every hotspot.",
+      "files": [
+        "evals/unmatched/scripts/reservation.py"
+      ],
+      "expected_output": "No HOT findings. All six rules N/A outside globs. No invented analytics or execution."
+    }
+  ]
+}
