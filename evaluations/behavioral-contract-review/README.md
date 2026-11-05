@@ -77,7 +77,8 @@ not live review execution. The gate requires:
 
 - one no-skill main baseline; three independent main treatment, clean, transfer, and
   transfer-clean reviews;
-- complete, fresh full reviews and one unchanged skill revision;
+- complete, fresh full reviews and one unchanged skill revision; the receipt scorer
+  requires completed skill components and distinct run, operation and result identities;
 - every expected primary/transfer defect detected in every corresponding repetition;
 - zero findings on each clean control and adjudication of every positive-arm finding;
 - skill-grounded evidence for every expected case across the treatment trials.
@@ -85,7 +86,7 @@ not live review execution. The gate requires:
 Run the gate's own regression tests with:
 
 ```bash
-python3 -m unittest discover -s evaluations/behavioral-contract-review -p test_score.py -v
+python3 -m unittest discover -s evaluations/behavioral-contract-review -p 'test_*.py' -v
 ```
 
 Unit tests validate the scorer only. They are never review-performance evidence.

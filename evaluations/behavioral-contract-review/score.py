@@ -22,9 +22,10 @@ def grade(runs, cases):
     observed = [(run.get('arm'), run.get('repetition')) for run in runs]
     if set(observed) != required or len(observed) != len(required):
         errors.append('Missing, duplicate or unexpected arm/repetition')
-    ids = [run.get('run_id') for run in runs]
-    if any(not item for item in ids) or len(set(ids)) != len(ids):
-        errors.append('Missing or reused run identity')
+    for identity in ('run_id', 'operation_id', 'raw_result_sha256'):
+        ids = [run.get(identity) for run in runs]
+        if any(not item for item in ids) or len(set(ids)) != len(ids):
+            errors.append(f'Missing or reused {identity}')
     hashes = {run.get('skill_sha256') for run in runs if run.get('arm') != 'control'}
     if len(hashes) != 1 or None in hashes:
         errors.append('Treatment skill revisions differ or are missing')
@@ -37,6 +38,8 @@ def grade(runs, cases):
             errors.append(f'{arm}/{rep}: not a complete fresh full review')
         if arm == 'control' and run.get('skill_consulted'):
             errors.append('Control consulted the treatment skill')
+        if run.get('skills_component_completed') is not (arm != 'control'):
+            errors.append(f'{arm}/{rep}: skills-component completion does not match arm')
         if arm != 'control' and run.get('skill_consulted') is not True:
             errors.append(f'{arm}/{rep}: skill execution not established')
         expected = populations['main'] if arm in ('control', 'treatment') else populations['holdout'] if arm == 'holdout' else set()

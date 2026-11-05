@@ -11,8 +11,11 @@ def sample():
         for repetition in range(1, 2 if arm == 'control' else 4):
             expected = ['A'] if arm in ('control', 'treatment') else ['B'] if arm == 'holdout' else []
             runs.append({'arm': arm, 'repetition': repetition, 'run_id': f'unit-{arm}-{repetition}',
+                         'operation_id': f'unit-operation-{arm}-{repetition}',
+                         'raw_result_sha256': f'unit-result-{arm}-{repetition}',
                          'complete': True, 'analysis_mode': 'full', 'skill_sha256': 'unit-digest',
                          'skill_consulted': arm != 'control',
+                         'skills_component_completed': arm != 'control',
                          'findings': [{'id': f'unit-finding-{arm}-{repetition}', 'case_ids': expected,
                                        'disposition': 'true_positive', 'skill_grounded': arm != 'control',
                                        'location': {'file_path': 'workspace/a.py' if expected == ['A'] else 'docs/b.md'},
@@ -46,6 +49,33 @@ class GateTests(unittest.TestCase):
     def test_missing_repetition_blocks_gate(self):
         runs, cases = sample()
         runs.pop()
+        self.assertFalse(grade(runs, cases)['passed'])
+
+    def test_reused_operation_blocks_gate(self):
+        runs, cases = sample()
+        runs[1]['operation_id'] = runs[2]['operation_id']
+        self.assertFalse(grade(runs, cases)['passed'])
+
+    def test_reused_result_blocks_gate(self):
+        runs, cases = sample()
+        runs[1]['raw_result_sha256'] = runs[2]['raw_result_sha256']
+        self.assertFalse(grade(runs, cases)['passed'])
+
+    def test_missing_operation_or_result_blocks_gate(self):
+        for key in ('operation_id', 'raw_result_sha256'):
+            with self.subTest(key=key):
+                runs, cases = sample()
+                del runs[1][key]
+                self.assertFalse(grade(runs, cases)['passed'])
+
+    def test_incomplete_skills_component_blocks_gate(self):
+        runs, cases = sample()
+        runs[1]['skills_component_completed'] = False
+        self.assertFalse(grade(runs, cases)['passed'])
+
+    def test_missing_skills_component_blocks_gate(self):
+        runs, cases = sample()
+        del runs[1]['skills_component_completed']
         self.assertFalse(grade(runs, cases)['passed'])
 
     def test_unadjudicated_finding_blocks_gate(self):

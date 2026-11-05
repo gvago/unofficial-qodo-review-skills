@@ -32,7 +32,13 @@ def validate_execution(raw, *, base_sha, tree_sha, skill_sha256,
         errors.append('Review omitted files')
     if run.get('effort', {}).get('requested') != 'deep' or run.get('effort', {}).get('effective') != 'extended':
         errors.append('Review depth differs from evaluation contract')
-    agents = [agent for review_pass in run.get('passes', []) for agent in review_pass.get('agents', [])]
+    passes = run.get('passes', [])
+    agents = [agent for review_pass in passes for agent in review_pass.get('agents', [])]
+    issue_agents = [agent for review_pass in passes if review_pass.get('kind') == 'primary'
+                    for agent in review_pass.get('agents', [])
+                    if agent.get('name', '').startswith('issue-review-agent-')]
+    if not issue_agents or any(agent.get('status') != 'completed' for agent in issue_agents):
+        errors.append('Primary issue-review execution is absent or incomplete')
     skills_completed = any(agent.get('name') == 'skills-agent' and agent.get('status') == 'completed'
                            for agent in agents)
     if require_skill != skills_completed:
