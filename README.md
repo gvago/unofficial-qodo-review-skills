@@ -1,7 +1,7 @@
 # Unofficial Qodo Review Skills
 
 Community-authored [agent skills](https://code.claude.com/docs/en/skills) shaped for
-**Qodo Merge PR review**, the skills agent that discovers `SKILL.md` files in a repo and
+**Qodo review**, the skills agent that discovers `SKILL.md` files in a repo and
 emits review findings driven by their rules.
 
 > **Unofficial.** Not affiliated with or endorsed by Qodo. These are community adaptations.
