@@ -1,0 +1,138 @@
+[
+  {
+    "id": "L1",
+    "rule": "BC-L1",
+    "file": "workspace/archive.py",
+    "symbol": "archive_resource",
+    "mechanism": "Archive destroys a payload promised to remain restorable.",
+    "group": "main"
+  },
+  {
+    "id": "L2",
+    "rule": "BC-L2",
+    "file": "workspace/cleanup.py",
+    "symbol": "cleanup",
+    "mechanism": "Name-only cleanup deletes another environment.",
+    "group": "main"
+  },
+  {
+    "id": "L3",
+    "rule": "BC-L3",
+    "file": "workspace/plans.py",
+    "symbol": "apply",
+    "mechanism": "Protection can change between requests; apply accepts stale plans.",
+    "group": "main"
+  },
+  {
+    "id": "C1",
+    "rule": "BC-C1",
+    "file": "workspace/accounts.py",
+    "symbol": "find_account",
+    "mechanism": "Ad hoc normalization loses whitespace/Unicode casefold semantics.",
+    "group": "main"
+  },
+  {
+    "id": "C2",
+    "rule": "BC-C2",
+    "file": "workspace/sessions.py",
+    "symbol": "save_session",
+    "mechanism": "Duration passed to absolute expiration API immediately expires session.",
+    "group": "main"
+  },
+  {
+    "id": "T1",
+    "rule": "BC-T1",
+    "file": "tests/test_overdraft.py",
+    "symbol": "test_overdraft",
+    "mechanism": "Required cross-platform regression coverage skipped unconditionally.",
+    "group": "main"
+  },
+  {
+    "id": "T2",
+    "rule": "BC-T2",
+    "file": "tests/test_export.py",
+    "symbol": "test_export",
+    "mechanism": "Fixed sleep shorter than producer release races completion.",
+    "group": "main"
+  },
+  {
+    "id": "T3",
+    "rule": "BC-T3",
+    "file": "tests/test_deposit.py",
+    "symbol": "test_deposit",
+    "mechanism": "Self-equality cannot detect wrong arithmetic.",
+    "group": "main"
+  },
+  {
+    "id": "D1",
+    "rule": "BC-D1",
+    "file": "workspace/policy.py",
+    "symbol": "DEFAULT_TTL",
+    "mechanism": "Current docs retain 60 seconds while default becomes 300.",
+    "group": "main"
+  },
+  {
+    "id": "D2",
+    "rule": "BC-D1",
+    "file": "docs/retries.md",
+    "symbol": "429",
+    "mechanism": "Prose expands retry behavior to 429 not implemented.",
+    "group": "main"
+  },
+  {
+    "id": "D3",
+    "rule": "BC-D1",
+    "file": "docs/publishing.md",
+    "symbol": "before",
+    "mechanism": "Docs invert prepare/send ordering while identifiers unchanged.",
+    "group": "main"
+  },
+  {
+    "id": "D4",
+    "rule": "BC-D1",
+    "file": "docs/config.md",
+    "symbol": "error",
+    "mechanism": "Prose incorrectly promises permission errors fallback.",
+    "group": "main"
+  },
+  {
+    "id": "D5",
+    "rule": "BC-D1",
+    "file": "workspace/retention.py",
+    "symbol": "may_compact",
+    "mechanism": "Code drops the legal-hold exception while unchanged prose still promises it.",
+    "group": "main"
+  },
+  {
+    "id": "H1",
+    "rule": "BC-L1",
+    "file": "workspace/references.py",
+    "symbol": "remove_owner",
+    "mechanism": "Detached owner destroys snapshot still owned by another caller.",
+    "group": "holdout"
+  },
+  {
+    "id": "H2",
+    "rule": "BC-C1",
+    "file": "workspace/settings.py",
+    "symbol": "read_enabled",
+    "mechanism": "String false becomes true instead of shared parser behavior.",
+    "group": "holdout"
+  },
+  {
+    "id": "H3",
+    "rule": "BC-T3",
+    "file": "tests/test_notification.py",
+    "symbol": "test_notify",
+    "mechanism": "Method object truthiness instead of invoking mock assertion.",
+    "group": "holdout"
+  },
+  {
+    "id": "H4",
+    "rule": "BC-D1",
+    "file": "docs/snapshots.md",
+    "symbol": "week",
+    "mechanism": "Docs remove weekday condition although backup still requires it.",
+    "group": "holdout"
+  }
+]

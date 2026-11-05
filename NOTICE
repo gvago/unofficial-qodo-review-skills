@@ -16,5 +16,9 @@ under skills/kernel-*/references/ are reproduced from masoncl/review-prompts
 (https://github.com/masoncl/review-prompts), Copyright Chris Mason, licensed under the
 MIT License (see THIRD_PARTY_LICENSE-masoncl-review-prompts).
 
+The skill at skills/behavioral-contract-review/ and its synthetic evaluation
+materials are original community-authored work, Copyright 2026 gvago and
+contributors, licensed under the Apache License, Version 2.0.
+
 This project is unofficial and is not affiliated with or endorsed by Qodo,
 Anton Babenko, Chris Mason, Sashiko, or The Linux Foundation.

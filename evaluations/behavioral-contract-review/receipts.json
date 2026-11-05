@@ -1,0 +1,2680 @@
+[
+  {
+    "arm": "control",
+    "repetition": 1,
+    "run_id": "eb8b048a-7db6-4b2e-a1ba-f9a950d24802",
+    "operation_id": "0c5a2106-8183-4ff2-9913-2a4485028e58",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": false,
+    "skills_component_completed": false,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "970cc5d81ecbdf660652dfe6e180619104402c24"
+    },
+    "branch": "eval/v3-control-r1",
+    "started_at": "2026-11-05T17:15:45.450867+00:00",
+    "finished_at": "2026-11-05T17:17:30.503939+00:00",
+    "raw_result_sha256": "f2819f98ab3718932821dd8ef9a07e89216816f8d7d6266fa0953dffa6a25d57",
+    "review_comment": "Please revisit the lifecycle and session changes before merging: they remove safeguards tied to protected resources, environment boundaries, and data retention without a stated rationale. If those behavior changes are intentional, explain why they are safe.\n\nKeep the documentation aligned with actual behavior rather than changing the docs alone. Also restore meaningful, reliable test coverage before relying on the suite: the weakened assertion, unexplained skip, and timing-sensitive test undermine confidence in these changes.\n\nPlease confirm whether the `DEFAULT_TTL` change from 60 to 300 is intentional and identify what uses it.",
+    "findings": [
+      {
+        "id": "730259fd-7e88-4cfd-ba40-52522b973aab",
+        "title": "Deposit tests accept wrong balances",
+        "description": "`test_deposit` replaces the expected balance with `result` itself in `assertEqual`, so it does not check the addition performed by `credit(10, 5)`. Any ordinary value returned by `credit(10, 5)`, including an incorrect balance, passes the test.",
+        "category": "Maintainability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_deposit.py",
+          "start_line": 8,
+          "end_line": 8,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_deposit.py[7-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[20-21]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[21-22]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Self-equality cannot detect wrong arithmetic."
+      },
+      {
+        "id": "7f4b3951-8be1-4d59-8283-3e749728c0ad",
+        "title": "Archiving a resource permanently deletes it",
+        "description": "`archive_resource` calls `store.delete(resource_id)` instead of `store.archive(resource_id)`, removing the row and payload rather than setting `state='archived'`. When a caller archives a resource, it is no longer available for restoration, and retention logic has no archived row to process.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/archive.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[5-9]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/archive.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[6-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Archive destroys a payload promised to remain restorable."
+      },
+      {
+        "id": "6fe1b9ea-6cff-4b98-be49-2d697df3e438",
+        "title": "Cleanup deletes same-named rows in every environment",
+        "description": "`cleanup` deletes every row in `store.rows` whose name matches, leaving its `environment` argument unused. When the same resource name exists in staging and production, cleaning up one environment also deletes the resource in the other.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/cleanup.py",
+          "start_line": 2,
+          "end_line": 4,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[11-14]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/cleanup.py[1-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[3-3]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Name-only cleanup deletes another environment."
+      },
+      {
+        "id": "dbd352f1-e70a-48d9-83fe-44006ef22e98",
+        "title": "Protected resources can be deleted via apply",
+        "description": "The PR removes the `protected` check from `apply`, which now calls `store.delete` straight away. The guard now runs only in `plan`, so any caller that calls `apply` without calling `plan` first can delete a protected resource.",
+        "category": "Security",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/plans.py",
+          "start_line": 8,
+          "end_line": 9,
+          "side": "left"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/plans.py[1-8]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Protection can change between requests; apply accepts stale plans."
+      },
+      {
+        "id": "c204fd99-0fa4-486c-9e33-bb0c2ff72d04",
+        "title": "Records under legal hold can be compacted",
+        "description": "`may_compact` returns `archived` alone, leaving its `legal_hold` parameter unused. When an archived record is under an active legal hold, it becomes eligible for compaction and data subject to that hold can be destroyed.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/retention.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/retention.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retention.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D5"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Code drops the legal-hold exception while unchanged prose still promises it."
+      },
+      {
+        "id": "5d3cce47-14d1-4f5b-8a1f-79179b715fb0",
+        "title": "Saved sessions expire immediately",
+        "description": "`save_session` passes the relative duration `ttl_seconds`, such as 300, as `expires_at` instead of an absolute Unix timestamp. Because `cache_get` compares that value with the current epoch time, sessions saved with an ordinary TTL read back as `None` immediately.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/sessions.py",
+          "start_line": 5,
+          "end_line": 5,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[8-14]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/sessions.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[3-3]"
+            }
+          ]
+        },
+        "case_ids": [
+          "C2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Duration passed to absolute expiration API immediately expires session."
+      },
+      {
+        "id": "4bba737c-e0bf-4edc-a983-a5947c21fde3",
+        "title": "Account lookup misses names with spaces or Unicode case",
+        "description": "`find_account` uses `raw_name.lower()` instead of the shared `normalize_account`, which applies `strip().casefold()` to account keys. Names with surrounding whitespace or Unicode case variants such as `ß` therefore fail to match stored normalized keys.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "workspace/accounts.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/accounts.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "C1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Ad hoc normalization loses whitespace/Unicode casefold semantics."
+      },
+      {
+        "id": "a6fefcd4-30d9-4eef-91eb-c4042c23197d",
+        "title": "Config docs promise read errors are swallowed",
+        "description": "`docs/config.md` says any unreadable file selects the empty configuration and read failures do not interrupt startup, but `load_config` catches only `FileNotFoundError`. When an existing file fails to read for another reason, such as `PermissionError`, the error reaches the caller instead of selecting the documented fallback.",
+        "category": "Maintainability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/config.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[13-17]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/config.md[1-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D4"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Prose incorrectly promises permission errors fallback."
+      },
+      {
+        "id": "95049eae-f271-45f8-93f0-25b018d6ab6a",
+        "title": "Publish docs reverse the real step order",
+        "description": "`docs/publishing.md` says the payload is sent before preparation, but `publish` calls `prepare(target)` before `send(target)`. Integrators relying on the documentation will expect the wrong ordering at the destination when publishing runs.",
+        "category": "Maintainability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/publishing.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[8-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/publishing.md[1-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Docs invert prepare/send ordering while identifiers unchanged."
+      },
+      {
+        "id": "554d2206-536f-4f08-b086-79bf524fdca5",
+        "title": "Retry docs claim rate limits are retried",
+        "description": "`docs/retries.md` says transient failures, including rate-limited requests, are retried automatically, but `should_retry` permits retries only for HTTP 503 when enabled. HTTP 429 and other transient statuses still reach the caller, so clients relying on the documentation may not handle them.",
+        "category": "Maintainability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/retries.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retries.md[1-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Prose expands retry behavior to 429 not implemented."
+      },
+      {
+        "id": "2c25a75e-a3bb-43a9-9bd5-d11ef56cd376",
+        "title": "Overdraft test is silently disabled",
+        "description": "`@unittest.skip('temporary')` prevents `test_overdraft` from running without a stated reason or tracking issue. Because its negative-credit assertion is skipped, a change that breaks the expected result of `credit(10, -15)` will no longer be caught by this test.",
+        "category": "Maintainability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_overdraft.py",
+          "start_line": 6,
+          "end_line": 6,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[21-22]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_overdraft.py[5-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[20-21]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Required cross-platform regression coverage skipped unconditionally."
+      },
+      {
+        "id": "f6deb4ff-738c-42dd-9775-a0f09365e401",
+        "title": "Export test asserts before the worker can run",
+        "description": "`test_export` schedules `release.set` with `Timer(0.1, ...)` but checks `output == ['ready']` after sleeping only 0.01 seconds, without joining the thread. Because the worker appends `'ready'` only after `release.wait()` returns, it is normally still blocked when the assertion runs, causing the test to fail or flake.",
+        "category": "Reliability",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "tests/test_export.py",
+          "start_line": 11,
+          "end_line": 16,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/worker.py[4-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_export.py[9-20]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Fixed sleep shorter than producer release races completion."
+      }
+    ]
+  },
+  {
+    "arm": "treatment",
+    "repetition": 1,
+    "run_id": "681a7eff-cc48-4e9f-be08-c54d2ac763a2",
+    "operation_id": "d86f30ae-5570-40c1-a7c3-65cd903f0eab",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "7fb1a3141b5b35825d244102767b905d780d4676"
+    },
+    "branch": "eval/v3-treatment-r1",
+    "started_at": "2026-11-05T17:16:10.649104+00:00",
+    "finished_at": "2026-11-05T17:18:40.653628+00:00",
+    "raw_result_sha256": "9bbdabe939eec5c791523c4973147f7e514badc04009f8792965c95fe3899104",
+    "review_comment": "The lifecycle changes need a clearer rationale. The store distinguishes state transitions from deletion, and cleanup and apply enforce boundaries at the point of effect; please preserve those contracts and use the existing store methods rather than mutating rows directly. If a behavior change is intentional, explain the requirement and update the corresponding documentation. Otherwise, please revert changes that weaken existing guarantees.\n\nPlease also check the documentation against actual behavior and restore meaningful test coverage before changing behavior. The current test edits weaken regression protection for the contracts at issue.",
+    "findings": [
+      {
+        "id": "2908883e-c6de-439e-bc7f-7e43c6a1fc62",
+        "title": "Protected resources can be deleted",
+        "description": "`apply` no longer checks the current row’s `protected` flag before calling `store.delete`, leaving protection checked only by the earlier `plan` request. A direct apply call, or an old plan applied after a resource becomes protected, reaches `store.delete` without a protection check.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/plans.py",
+          "start_line": 8,
+          "end_line": 9,
+          "side": "left"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/plans.py[1-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[8-9]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[4-4]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Protection can change between requests; apply accepts stale plans."
+      },
+      {
+        "id": "e18d4bff-9494-4a0b-88bb-eb46b874fdd5",
+        "title": "Archiving deletes the retained resource",
+        "description": "`archive_resource` calls `store.delete(resource_id)` instead of `store.archive(resource_id)`, removing the row rather than setting its state to `archived`. Every archive request also removes the retained payload, leaving nothing to restore.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/archive.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/archive.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[5-9]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Archive destroys a payload promised to remain restorable."
+      },
+      {
+        "id": "9afe44b1-abcf-41da-86cb-67aa10b4cbe0",
+        "title": "Cleanup deletes other environments' data",
+        "description": "`cleanup` selects rows by `row['name']` without checking its `environment` argument. When the same name exists in multiple environments, cleaning one environment also deletes the matching resource in another, such as production.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/cleanup.py",
+          "start_line": 3,
+          "end_line": 4,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/cleanup.py[1-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[11-15]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[3-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[11-14]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Name-only cleanup deletes another environment."
+      },
+      {
+        "id": "601b6ea0-c8a7-4bc9-a991-250b872b79c8",
+        "title": "Held records become compactable",
+        "description": "`may_compact` returns `archived` without checking its `legal_hold` argument. When an archived record is under an active legal hold, the predicate reports it eligible for compaction, potentially allowing data that must be preserved to be destroyed.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/retention.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/retention.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retention.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retention.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D5"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Code drops the legal-hold exception while unchanged prose still promises it."
+      },
+      {
+        "id": "f342c910-a649-4576-8c91-65411b0c72a3",
+        "title": "Account lookups miss equivalent names",
+        "description": "`find_account` uses `raw_name.lower()` instead of `normalize_account(raw_name)`, dropping whitespace stripping and full Unicode case folding. Looking up `\" Alice \"` against a stored `alice` key, or `\"STRASSE\"` against a key normalized from `\"straße\"`, no longer finds the account.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/accounts.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/accounts.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[2-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[3-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[1-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "C1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Ad hoc normalization loses whitespace/Unicode casefold semantics. The whitespace example is valid. The STRASSE-versus-normalized-straße example in this finding is not a failing input for the supplied helper; it is an explanatory error and receives no separate credit."
+      },
+      {
+        "id": "b47c5d9d-b37b-468f-86e3-44041bf6c276",
+        "title": "Saved sessions expire too soon",
+        "description": "`save_session` passes the duration `ttl_seconds` to `cache_put` as an absolute `expires_at` timestamp. When the current Unix time exceeds that duration, `cache_get` fails its `expires_at > now` check and returns `None` for the newly saved session.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/sessions.py",
+          "start_line": 5,
+          "end_line": 5,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/sessions.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[8-14]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[3-3]"
+            }
+          ]
+        },
+        "case_ids": [
+          "C2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Duration passed to absolute expiration API immediately expires session."
+      },
+      {
+        "id": "8aee7424-2ed5-432e-8094-182a0930c438",
+        "title": "The cache default documentation is stale",
+        "description": "`DEFAULT_TTL` changes from 60 to 300 seconds while `docs/cache.md` still describes a 60-second default. Consumers using the exported constant will cache entries five times longer than readers of the guide expect, potentially serving stale data longer than anticipated.",
+        "category": "Maintainability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "workspace/policy.py",
+          "start_line": 1,
+          "end_line": 1,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[1-1]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/cache.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/cache.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Current docs retain 60 seconds while default becomes 300."
+      },
+      {
+        "id": "7a85b13c-8a54-4bd8-b665-2b03f6417d82",
+        "title": "Deposit failures pass the test",
+        "description": "`test_deposit` compares `result` with itself instead of the expected balance of 15. If `credit(10, 5)` returns an incorrect value, the assertion still passes and leaves the documented 10 + 5 = 15 behavior unchecked.",
+        "category": "Reliability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_deposit.py",
+          "start_line": 8,
+          "end_line": 8,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_deposit.py[5-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[20-21]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[4-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_deposit.py[6-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[21-22]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Self-equality cannot detect wrong arithmetic."
+      },
+      {
+        "id": "d5513e1f-915e-4d90-ac40-1bd0456e43f3",
+        "title": "Overdraft regressions go untested",
+        "description": "`@unittest.skip('temporary')` disables `test_overdraft` without replacement coverage. During test discovery, its assertion that `credit(10, -15)` returns `-5` does not run, so a change that stops `credit` from returning a negative balance can pass CI unnoticed.",
+        "category": "Reliability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_overdraft.py",
+          "start_line": 6,
+          "end_line": 6,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_overdraft.py[5-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[20-21]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[21-22]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Required cross-platform regression coverage skipped unconditionally."
+      },
+      {
+        "id": "b4ab05ce-c454-499d-9c30-e25a3449513d",
+        "title": "Export tests assert before completion",
+        "description": "`test_export` sleeps for 0.01 seconds before asserting that the worker has finished and produced `['ready']`, although its timer does not set `release` until 0.1 seconds have passed. Because the worker appends only after `release.wait()` returns, the assertions normally run while it is still blocked and may pass only if scheduling delays them.",
+        "category": "Reliability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_export.py",
+          "start_line": 14,
+          "end_line": 15,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_export.py[8-19]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/worker.py[4-9]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/worker.py[4-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[3-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_export.py[8-20]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Fixed sleep shorter than producer release races completion."
+      },
+      {
+        "id": "4f4bc338-ed71-4cfb-95af-90a8cfa58e9c",
+        "title": "Unreadable files can still halt startup",
+        "description": "`docs/config.md` says unreadable files select an empty configuration without interrupting startup, but `load_config` catches only `FileNotFoundError`. When a read fails because of denied permissions, the error reaches the caller instead of taking the documented fallback.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/config.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/config.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[13-17]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[13-16]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D4"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Prose incorrectly promises permission errors fallback."
+      },
+      {
+        "id": "e0b0a54e-8367-4016-a1fd-6978b03b92d7",
+        "title": "Publish ordering is documented backward",
+        "description": "`docs/publishing.md` says the payload is sent before preparation begins, but `publish` calls `prepare(target)` before `send(target)`. Readers building destination integrations from the guide may expect a send even when preparation fails, although the implementation never reaches it.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/publishing.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/publishing.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[8-10]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Docs invert prepare/send ordering while identifiers unchanged."
+      },
+      {
+        "id": "9b7f8bea-9cca-46ce-8506-8f135c378e15",
+        "title": "Rate-limited requests are not retried",
+        "description": "`docs/retries.md` promises automatic retries for rate-limited requests, but `should_retry` returns true only when retries are enabled and the status is HTTP 503. An HTTP 429 response, along with other statuses, reaches the caller without a retry, leaving integrators who trust the guide without their own handling.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/retries.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retries.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[4-5]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Prose expands retry behavior to 429 not implemented."
+      }
+    ]
+  },
+  {
+    "arm": "treatment",
+    "repetition": 2,
+    "run_id": "9753e963-1921-4ce0-9a10-cd216cedbbe1",
+    "operation_id": "0fb5836b-0cb2-4b65-af5a-826951e638aa",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "7fb1a3141b5b35825d244102767b905d780d4676"
+    },
+    "branch": "eval/v3-treatment-r2",
+    "started_at": "2026-11-05T17:15:58.402633+00:00",
+    "finished_at": "2026-11-05T17:18:00.919356+00:00",
+    "raw_result_sha256": "8a95697b0855c0f14da6a5dcff5da1de82b017923759c7b4c7b1394f225cfde3",
+    "review_comment": "Please preserve each lifecycle safeguard at the point where it takes effect; archiving, cleanup, application, and compaction have different contracts. More broadly, several changes appear to diverge from the documented behavior, while some documentation changes describe behavior the code does not implement and test edits weaken regression coverage. If these are intentional behavior changes, please explain them in the PR description and update the code, documentation, and tests together.",
+    "findings": [
+      {
+        "id": "657962c5-2182-4d1e-8f78-42367cc178e5",
+        "title": "Archiving destroys the resource",
+        "description": "`archive_resource` calls `store.delete(resource_id)` instead of `store.archive(resource_id)`, removing the row rather than changing its state. Archiving an existing resource removes its payload, leaving nothing to restore despite the lifecycle documentation's retention promise.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/archive.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/archive.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[5-9]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Archive destroys a payload promised to remain restorable."
+      },
+      {
+        "id": "7ce3bc14-28ac-460d-a6af-7475804ad935",
+        "title": "Cleanup deletes other environments' rows",
+        "description": "`cleanup` selects rows using only `row['name'] == name` and ignores its `environment` argument. When a name exists in multiple environments, a cleanup request for one environment also deletes same-named rows in the others, including production.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/cleanup.py",
+          "start_line": 3,
+          "end_line": 4,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/cleanup.py[1-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[11-14]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[3-3]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Name-only cleanup deletes another environment."
+      },
+      {
+        "id": "3cb34a34-dab8-4b7b-8ede-25a339dcbc09",
+        "title": "Protected resources can be deleted",
+        "description": "`apply` no longer checks the resource’s current `protected` value before calling `store.delete`. If the resource becomes protected after the separate planning request, applying the old plan still reaches deletion.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/plans.py",
+          "start_line": 8,
+          "end_line": 9,
+          "side": "left"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/plans.py[1-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[4-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[8-9]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Protection can change between requests; apply accepts stale plans."
+      },
+      {
+        "id": "18c06f66-184c-4337-a775-d70ec8719e59",
+        "title": "Equivalent account names stop matching",
+        "description": "`find_account` uses `raw_name.lower()` instead of `normalize_account(raw_name)`, omitting whitespace trimming and Unicode case folding. Inputs such as `\" Alice \"` or `\"ß\"` no longer match stored keys normalized as `alice` or `ss`, even though other callers produce keys with the shared helper.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/accounts.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/accounts.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "C1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Ad hoc normalization loses whitespace/Unicode casefold semantics."
+      },
+      {
+        "id": "30f5c027-6dd4-417d-b4e4-1db3bb4ca7f6",
+        "title": "Held records become compactable",
+        "description": "`may_compact` returns `archived` without checking its `legal_hold` parameter. When an archived record has an active legal hold, the function reports it as eligible for compaction despite the documented exclusion.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/retention.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/retention.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retention.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retention.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D5"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Code drops the legal-hold exception while unchanged prose still promises it."
+      },
+      {
+        "id": "68888d6a-64b9-443e-9779-61a9dd7da81b",
+        "title": "New sessions expire immediately",
+        "description": "`save_session` passes the duration `ttl_seconds` as `expires_at`, which the cache treats as an absolute Unix timestamp. With an ordinary lifetime such as 60 or 300 seconds, `cache_get` compares that value with the current Unix time and returns `None` for the newly saved session.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/sessions.py",
+          "start_line": 5,
+          "end_line": 5,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/sessions.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[8-14]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[3-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[8-11]"
+            }
+          ]
+        },
+        "case_ids": [
+          "C2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Duration passed to absolute expiration API immediately expires session."
+      },
+      {
+        "id": "0d4a0e12-da6e-44cb-b6c4-d3ff4656f24c",
+        "title": "Cache lifetime guidance is stale",
+        "description": "`DEFAULT_TTL` in `workspace/policy.py` is now 300 seconds, but `docs/cache.md` still states a 60-second default. Consumers using the exported default get a five-minute lifetime, so readers relying on the documentation misjudge how long cached values remain valid.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "workspace/policy.py",
+          "start_line": 1,
+          "end_line": 1,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[1-1]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/cache.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/cache.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Current docs retain 60 seconds while default becomes 300."
+      },
+      {
+        "id": "9b213101-5bb8-41d1-b320-7d629229bd8e",
+        "title": "Read failures can still interrupt startup",
+        "description": "`docs/config.md` claims unreadable files select an empty configuration and read failures never interrupt startup, but `load_config` catches only `FileNotFoundError`. When a read fails for another reason, such as permission denial, the error propagates to the caller instead of selecting the empty configuration.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/config.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/config.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[13-17]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[12-16]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D4"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Prose incorrectly promises permission errors fallback."
+      },
+      {
+        "id": "f7101c10-bcde-4684-aa78-00afc2650c2d",
+        "title": "Publishing order is documented backwards",
+        "description": "`docs/publishing.md` says the payload is sent before preparation, but `publish` calls `prepare(target)` before `send(target)`. Integrations following the guide will expect the wrong order, and if preparation fails, sending never occurs.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/publishing.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/publishing.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[8-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[7-9]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Docs invert prepare/send ordering while identifiers unchanged."
+      },
+      {
+        "id": "91e75723-29d8-453b-b923-61688b9bb32d",
+        "title": "Rate limits are not retryable",
+        "description": "`docs/retries.md` says rate-limited requests and other transient failures are retried, but `should_retry` returns true only when retries are enabled and the status is 503. Even with retries enabled, HTTP 429 and every other non-503 response reach the caller without a retry, so callers relying on the guide may skip their own back-off handling.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/retries.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retries.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[4-5]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Prose expands retry behavior to 429 not implemented."
+      },
+      {
+        "id": "74705ebc-65f9-4c3a-baef-5dc55e5825d3",
+        "title": "Incorrect deposits pass the test",
+        "description": "`test_deposit` compares `result` with itself instead of the expected value `15`. If `credit(10, 5)` returns an incorrect value, the assertion still passes and the test no longer catches regressions in deposit arithmetic.",
+        "category": "Reliability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_deposit.py",
+          "start_line": 8,
+          "end_line": 8,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_deposit.py[6-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[4-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_deposit.py[5-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[21-22]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Self-equality cannot detect wrong arithmetic."
+      },
+      {
+        "id": "6da43d4f-0b7a-4693-b9fc-01b3b99299f0",
+        "title": "Export test races its release signal",
+        "description": "`test_export` replaces joining the worker with a 0.01-second sleep, even though a timer does not signal `release` until 0.1 seconds later. Because the worker waits for `release` before appending `ready`, the output and thread-completion assertions normally run before it finishes and remain scheduling-dependent.",
+        "category": "Reliability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_export.py",
+          "start_line": 14,
+          "end_line": 16,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_export.py[8-20]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/worker.py[4-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[3-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/worker.py[4-9]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Fixed sleep shorter than producer release races completion."
+      },
+      {
+        "id": "69999ad2-2191-4ab8-b22b-6d13b58f18f7",
+        "title": "Overdraft regressions go untested",
+        "description": "`test_overdraft` is unconditionally disabled by `@unittest.skip('temporary')`, leaving its assertion that `credit(10, -15)` returns `-5` unexecuted. Because the skip applies on every platform and there is no replacement test, a regression in negative-credit arithmetic can pass unnoticed.",
+        "category": "Reliability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_overdraft.py",
+          "start_line": 6,
+          "end_line": 6,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_overdraft.py[5-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Required cross-platform regression coverage skipped unconditionally."
+      }
+    ]
+  },
+  {
+    "arm": "treatment",
+    "repetition": 3,
+    "run_id": "f868a70a-dba8-4a1b-895b-ca8e54df3b57",
+    "operation_id": "cda0fe60-5254-4785-8b8e-502a87ff6dcf",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "7fb1a3141b5b35825d244102767b905d780d4676"
+    },
+    "branch": "eval/v3-treatment-r3",
+    "started_at": "2026-11-05T17:17:47.616769+00:00",
+    "finished_at": "2026-11-05T17:20:12.994756+00:00",
+    "raw_result_sha256": "589eeba05e411fec86452d1cbb1776497aa63c7372ef0e753e0f062fbf46ea96",
+    "review_comment": "Please reconcile these behavior changes with the established lifecycle and API contracts before merging. As written, the PR appears to weaken safeguards and disable regression checks without explaining why. If those changes are intentional, please state the new requirements explicitly and align the code, documentation, and tests with the behavior callers can observe; otherwise, restore the safeguards and regression checks.\n\nBefore relying on the new `skills/behavioral-contract-review/SKILL.md`, please also confirm its licence and authorship metadata.",
+    "findings": [
+      {
+        "id": "c614add3-f08f-46b7-a845-77978c54a787",
+        "title": "Archiving destroys the resource",
+        "description": "`archive_resource` calls `store.delete(resource_id)` instead of `store.archive(resource_id)`, removing the row rather than setting its state to `archived`. For every archive request on an existing resource, the payload is lost, restoration becomes impossible, and a later archive-state lookup raises `KeyError`.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/archive.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/archive.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[5-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[5-9]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Archive destroys a payload promised to remain restorable."
+      },
+      {
+        "id": "c2b651c3-6279-4f1b-ad4d-e35937d5c70f",
+        "title": "Cleanup deletes other environments",
+        "description": "`cleanup` matches rows in `store.rows` by name without checking its `environment` argument. When a name occurs in both staging and production, cleaning it in one environment also deletes its rows in the other.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/cleanup.py",
+          "start_line": 3,
+          "end_line": 4,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/cleanup.py[1-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[11-14]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[3-3]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Name-only cleanup deletes another environment."
+      },
+      {
+        "id": "8e51b5cf-598f-4246-9dd0-feb386a6ab3a",
+        "title": "Old plans delete protected resources",
+        "description": "`apply` no longer checks `store.current(resource_id)['protected']` before calling `store.delete`; protection is checked only in `plan`. When `apply` is called directly or a resource becomes protected after planning, deletion still reaches `store.delete`.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/plans.py",
+          "start_line": 8,
+          "end_line": 9,
+          "side": "left"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/plans.py[1-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[7-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/lifecycle.md[4-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/storage.py[8-9]"
+            }
+          ]
+        },
+        "case_ids": [
+          "L3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Protection can change between requests; apply accepts stale plans."
+      },
+      {
+        "id": "cec770f3-570d-4306-a508-ec4cc2eb80fe",
+        "title": "Held records become compactable",
+        "description": "`may_compact` returns `archived` without checking its `legal_hold` parameter. When both flags are true, the record passes the eligibility check and can reach compaction despite the legal hold, potentially destroying data required to be kept.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/retention.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/retention.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retention.md[1-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D5"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Code drops the legal-hold exception while unchanged prose still promises it."
+      },
+      {
+        "id": "5097bec4-a427-40d6-bb3f-bc88da08b6c2",
+        "title": "Some account lookups now miss",
+        "description": "`find_account` uses `raw_name.lower()` instead of `normalize_account(raw_name)`, losing the shared helper’s whitespace trimming and Unicode case folding. A lookup such as `\" Alice \"` against `\"alice\"`, or `\"Straße\"` against `\"strasse\"`, now misses the stored normalized key and returns `None`.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/accounts.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/accounts.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[4-4]"
+            }
+          ]
+        },
+        "case_ids": [
+          "C1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Ad hoc normalization loses whitespace/Unicode casefold semantics."
+      },
+      {
+        "id": "bc96d9e3-cc85-4948-abda-81cdb4564786",
+        "title": "Saved sessions expire immediately",
+        "description": "`save_session` passes the duration `ttl_seconds` as the absolute `expires_at` timestamp instead of adding it to the current time. With a normal TTL such as 60 or 300 seconds, `cache_get` compares that value against the current Unix time and returns no session immediately.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/sessions.py",
+          "start_line": 5,
+          "end_line": 5,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/sessions.py[4-5]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[8-13]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/accounts.md[3-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[8-14]"
+            }
+          ]
+        },
+        "case_ids": [
+          "C2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Duration passed to absolute expiration API immediately expires session."
+      },
+      {
+        "id": "4ff7dee5-30a7-448d-995e-4ddccabcd8d2",
+        "title": "The documented cache lifetime is wrong",
+        "description": "`DEFAULT_TTL` is 300 seconds, but `docs/cache.md` still documents a 60-second default. Consumers using the exported constant get a five-minute cache lifetime while readers of the documentation expect one minute.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "workspace/policy.py",
+          "start_line": 1,
+          "end_line": 1,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[1-1]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/cache.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/cache.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Current docs retain 60 seconds while default becomes 300."
+      },
+      {
+        "id": "7d6ac454-9451-4b50-ae25-cbfb9e10d0d9",
+        "title": "Read failures contradict configuration docs",
+        "description": "`load_config` catches only `FileNotFoundError`, while `docs/config.md` says any unreadable configuration file selects the empty configuration. When `path.read_text()` raises `PermissionError` or another read error, it reaches the caller and can interrupt startup instead of taking the `{}` fallback.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/config.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/config.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[11-15]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[13-17]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D4"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Prose incorrectly promises permission errors fallback."
+      },
+      {
+        "id": "b1b42b9d-03e3-491f-8a0a-ebe72129715c",
+        "title": "Publishing order is documented backward",
+        "description": "`docs/publishing.md` says the payload is sent before preparation, but `publish` calls `prepare(target)` before `send(target)`. Readers following the documented sequence will expect the wrong order of side effects at the destination, and if preparation fails, sending never occurs.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/publishing.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/publishing.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[8-10]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Docs invert prepare/send ordering while identifiers unchanged."
+      },
+      {
+        "id": "2dd35741-3f3f-4169-8e36-6db7909187b7",
+        "title": "Rate limits are falsely promised retries",
+        "description": "`docs/retries.md` says enabled retries cover transient failures, including rate-limited requests, but `should_retry` returns true only for status 503. When a request receives HTTP 429 or another non-503 response, it reaches the caller without the documented retry.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/retries.md",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/retries.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[4-6]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/policy.py[4-5]"
+            }
+          ]
+        },
+        "case_ids": [
+          "D2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Prose expands retry behavior to 429 not implemented."
+      },
+      {
+        "id": "5401d78b-ae3b-4a13-b993-25032a1e622b",
+        "title": "Deposit failures pass the test",
+        "description": "`test_deposit` compares `result` with itself instead of the expected balance of 15. If `credit(10, 5)` returns an incorrect value, such as 10, the assertion still passes and the broken calculation can get past CI.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_deposit.py",
+          "start_line": 8,
+          "end_line": 8,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_deposit.py[5-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[20-22]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[4-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_deposit.py[6-8]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Self-equality cannot detect wrong arithmetic."
+      },
+      {
+        "id": "fce9976f-4647-4aaf-ae6f-3f3c7ec49901",
+        "title": "Export test races its own release",
+        "description": "`test_export` sleeps for 0.01 seconds before asserting `output == ['ready']`, but its timer does not set `release` until 0.1 seconds have passed. When the assertion runs before the timer fires, the worker is still blocked on `release.wait()` and has not appended `ready`, so a working export fails the test; scheduling delays can make the result timing-dependent.",
+        "category": "Reliability",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_export.py",
+          "start_line": 14,
+          "end_line": 14,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_export.py[8-16]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/worker.py[4-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_export.py[8-20]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/worker.py[4-9]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[3-3]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Fixed sleep shorter than producer release races completion."
+      },
+      {
+        "id": "b6743ccf-1224-4c23-9052-5ddda5b5f11b",
+        "title": "Overdraft regressions go untested",
+        "description": "`test_overdraft` has an unconditional `@unittest.skip('temporary')` that prevents its assertion that `credit(10, -15)` returns -5 from running. With no justification or replacement coverage, a change to negative-balance arithmetic can pass unnoticed on every platform.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_overdraft.py",
+          "start_line": 6,
+          "end_line": 6,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_overdraft.py[5-8]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/tests.md[1-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "T1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Required cross-platform regression coverage skipped unconditionally."
+      }
+    ]
+  },
+  {
+    "arm": "holdout",
+    "repetition": 1,
+    "run_id": "498757bd-92c9-4722-87e9-30f79ff97085",
+    "operation_id": "4a0edb5d-8b39-40a3-b1c9-ad296d50e9cf",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "4d76080620ab7c6cc7dba7007812de9463ab347e"
+    },
+    "branch": "eval/v3-holdout-r1",
+    "started_at": "2026-11-05T17:20:37.348184+00:00",
+    "finished_at": "2026-11-05T17:21:38.702495+00:00",
+    "raw_result_sha256": "cfb452a1b4745d1bec1868369bcf912e61919d41442d42462a0b3ffb2f311b16",
+    "review_comment": "Please clarify whether the snapshot ownership and `parse_enabled` changes are intentional, and how they fit the existing documented contracts. They need a rationale or test coverage. Please also retain the notification test’s original call assertion and check the weekend snapshot-scheduling claim against the scheduling logic.",
+    "findings": [
+      {
+        "id": "5ec6e5e2-0498-4b9e-8a8a-1f56cecab669",
+        "title": "Shared snapshots are destroyed",
+        "description": "`remove_owner` calls `snapshots.destroy(snapshot)` after every detach without checking whether any owners remain. Detaching Alice from the shared snapshot leaves Bob in its owner set, but records the snapshot as destroyed even though Bob still references it.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/references.py",
+          "start_line": 3,
+          "end_line": 3,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/references.py[1-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[1-11]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[1-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Detached owner destroys snapshot still owned by another caller."
+      },
+      {
+        "id": "9c0314f9-dcef-439c-a9e0-9e52e8d86dc2",
+        "title": "False strings enable settings",
+        "description": "`read_enabled` replaces `parse_enabled(values[key])` with `bool(values[key])`, which treats every nonempty string as true. When a caller supplies `'false'`, `'no'`, or `'0'`, it receives `True` instead of `False`, and unsupported strings no longer raise `ValueError`.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/settings.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/settings.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[13-18]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[3-3]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: String false becomes true instead of shared parser behavior."
+      },
+      {
+        "id": "40e5aab3-d961-4b4c-b1fa-3d9cc86318da",
+        "title": "Weekend backups remain disabled",
+        "description": "The revised `docs/snapshots.md` says a configured schedule permits backups every day, including weekends, while `backup(schedule, weekdays)` still returns `schedule and weekdays`. When a schedule is configured but the weekday gate is false, `backup(True, False)` returns `False`, so readers relying on the new prose expect weekend backups that never run.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/snapshots.md",
+          "start_line": 4,
+          "end_line": 4,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[4-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[21-22]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H4"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Docs remove weekday condition although backup still requires it."
+      },
+      {
+        "id": "721b09fe-8431-412d-a1c3-3803c9c866a0",
+        "title": "Missing notifications pass unnoticed",
+        "description": "`test_notify` passes the bound `sender.send.assert_called_once` method to `assertTrue` instead of calling an assertion on the mock. Because the method object is truthy, the test passes even when `notify` never calls `send` or sends a value other than `'done'`.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_notification.py",
+          "start_line": 10,
+          "end_line": 10,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_notification.py[7-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[15-16]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[16-17]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Method object truthiness instead of invoking mock assertion."
+      }
+    ]
+  },
+  {
+    "arm": "holdout",
+    "repetition": 2,
+    "run_id": "bc509d03-3000-452b-9bca-aeab91805963",
+    "operation_id": "fc649c38-275f-448e-8f62-cdecb3b71be6",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "4d76080620ab7c6cc7dba7007812de9463ab347e"
+    },
+    "branch": "eval/v3-holdout-r2",
+    "started_at": "2026-11-05T17:21:14.136538+00:00",
+    "finished_at": "2026-11-05T17:22:31.013425+00:00",
+    "raw_result_sha256": "01d1388048a2fe5e656d3f332da83a5bd9ab6f63bfe139e5b6d20652195d7b33",
+    "review_comment": "Please explain the rationale for removing the existing safeguards, or keep them if the goal is only to simplify the code. The documentation still describes the original behavior. Also, consider moving the large `SKILL.md` review guidance to a separate PR so it can be reviewed independently of the behavior changes.",
+    "findings": [
+      {
+        "id": "07735eba-6f79-4e87-ae37-fd08cfac16db",
+        "title": "Shared snapshots are destroyed",
+        "description": "`remove_owner` calls `snapshots.destroy(snapshot)` after every detach instead of checking whether `snapshots.owners[snapshot]` is empty. Detaching Alice from the shared snapshot leaves Bob as an owner but marks the snapshot deleted, so Bob loses data he still owns.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/references.py",
+          "start_line": 3,
+          "end_line": 3,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/references.py[1-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[1-11]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[1-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[2-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Detached owner destroys snapshot still owned by another caller."
+      },
+      {
+        "id": "93f5a6cd-ff67-44ef-8872-ae028f0c99d4",
+        "title": "Disabled settings become enabled",
+        "description": "`read_enabled` replaces `parse_enabled` with `bool(values[key])`, which treats nonempty strings such as `'false'`, `'no'`, and `'0'` as true and no longer rejects unsupported values. When callers supply those settings, disabled values are read as enabled, while invalid values pass without the `ValueError` they previously raised.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/settings.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/settings.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[13-18]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[3-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[12-18]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: String false becomes true instead of shared parser behavior."
+      },
+      {
+        "id": "936bd31d-2b55-4984-a7d5-2750f1c0bb13",
+        "title": "Weekend backup guidance is wrong",
+        "description": "`docs/snapshots.md` says a configured schedule permits weekend backups, but `backup(schedule, weekdays)` still returns `schedule and weekdays`. When a schedule is configured and `weekdays=False`, the function returns false, so readers relying on the new wording will expect backups that do not run.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/snapshots.md",
+          "start_line": 4,
+          "end_line": 4,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[4-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[20-22]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[21-22]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H4"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Docs remove weekday condition although backup still requires it."
+      },
+      {
+        "id": "fa57cd68-3706-47f2-926c-d32a1baba17a",
+        "title": "Missing notifications pass the test",
+        "description": "`test_notify` passes the truthy `sender.send.assert_called_once` method to `assertTrue` instead of calling an assertion on the mock. If `notify` omits `sender.send`, calls it more than once, or sends a value other than `'done'`, the test still passes.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_notification.py",
+          "start_line": 10,
+          "end_line": 10,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_notification.py[7-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[16-17]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[17-18]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Method object truthiness instead of invoking mock assertion."
+      }
+    ]
+  },
+  {
+    "arm": "holdout",
+    "repetition": 3,
+    "run_id": "c9818d2e-c7be-4328-b553-db13e590ad3c",
+    "operation_id": "1281f1ac-2065-4a7c-b695-1a3a912594df",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "4d76080620ab7c6cc7dba7007812de9463ab347e"
+    },
+    "branch": "eval/v3-holdout-r3",
+    "started_at": "2026-11-05T17:22:01.833994+00:00",
+    "finished_at": "2026-11-05T17:23:20.138403+00:00",
+    "raw_result_sha256": "6150a573d2707f64b4046eaf603214e8542bab4d08e3f04e0e0c9816848552dc",
+    "review_comment": "The behavior changes appear to remove documented invariants without an explanation. If they’re intentional, please update the contract documentation and callers in the same change; otherwise, please revert them.",
+    "findings": [
+      {
+        "id": "5110947f-ef9b-4e7e-b5e2-4b17a6f459af",
+        "title": "Shared snapshots are marked deleted",
+        "description": "`remove_owner` calls `snapshots.destroy(snapshot)` unconditionally after `detach`, rather than checking whether `snapshots.owners[snapshot]` is empty. Detaching Alice from a shared snapshot leaves Bob in its owner set but adds the snapshot to `deleted`.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/references.py",
+          "start_line": 3,
+          "end_line": 3,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/references.py[1-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[1-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[2-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[1-2]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H1"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Detached owner destroys snapshot still owned by another caller."
+      },
+      {
+        "id": "f7ceec24-249a-4b8e-a6aa-6c199f0f3871",
+        "title": "False settings turn on features",
+        "description": "`read_enabled` applies `bool(values[key])` instead of `parse_enabled`, treating every nonempty string as true. When an enabled setting contains `'false'`, `'no'`, or `'0'`, it returns `True`; unsupported strings also pass silently instead of raising the parser's `ValueError`.",
+        "category": "Correctness",
+        "action_level": "action_required",
+        "location": {
+          "file_path": "workspace/settings.py",
+          "start_line": 2,
+          "end_line": 2,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/settings.py[1-2]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[12-17]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[3-3]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[13-18]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H2"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: String false becomes true instead of shared parser behavior."
+      },
+      {
+        "id": "f3266bb4-eb7b-4162-86e6-e8a207872e3f",
+        "title": "Weekend backups are falsely promised",
+        "description": "`docs/snapshots.md` says a configured schedule permits backups every day, including weekends, but `backup` still returns `schedule and weekdays`. When a schedule is configured and `weekdays=False`, the function returns `False`, so readers relying on the new prose will expect weekend backups that do not run.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "docs/snapshots.md",
+          "start_line": 4,
+          "end_line": 4,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "docs/snapshots.md[4-4]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[20-22]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/snapshots.py[21-22]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H4"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Docs remove weekday condition although backup still requires it."
+      },
+      {
+        "id": "298abf45-1f7c-468f-87ea-4cd281397167",
+        "title": "Notification regressions go undetected",
+        "description": "`test_notify` passes the bound `sender.send.assert_called_once` method to `assertTrue` instead of invoking a mock assertion, and removes the check for the `'done'` argument. If `notify` omits the send or sends a different payload, the test still passes.",
+        "category": "Correctness",
+        "action_level": "remediation_recommended",
+        "location": {
+          "file_path": "tests/test_notification.py",
+          "start_line": 10,
+          "end_line": 10,
+          "side": "right"
+        },
+        "evidence": {
+          "citations": [
+            {
+              "source_type": "skill",
+              "source": "behavioral-contract-review"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "tests/test_notification.py[7-10]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[14-15]"
+            },
+            {
+              "source_type": "pr_branch_file",
+              "source": "workspace/common.py[11-12]"
+            }
+          ]
+        },
+        "case_ids": [
+          "H3"
+        ],
+        "disposition": "true_positive",
+        "adjudication_note": "Source-inspected match to the frozen mechanism: Method object truthiness instead of invoking mock assertion."
+      }
+    ]
+  },
+  {
+    "arm": "clean",
+    "repetition": 1,
+    "run_id": "49931c09-107a-4177-9a3d-2f91eac70af9",
+    "operation_id": "19c1a1a1-aef8-42be-9eec-17b2419d54e8",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "17b4907f2f42490c77d791a98ca3afc9754d5cd9"
+    },
+    "branch": "eval/v6-clean-r1",
+    "started_at": "2026-11-05T17:31:52.313042+00:00",
+    "finished_at": "2026-11-05T17:32:44.903303+00:00",
+    "raw_result_sha256": "706bec972a4aa8de80d5994e58a472431996014975c8af18752fbb072cde63f5",
+    "review_comment": "Please confirm in the PR description that extending the default session lifetime from 60 to 300 seconds is intentional.\n\nAs optional cleanup, consider having `account_key` call `normalize_account` rather than duplicating its logic, so they cannot drift apart. You may also want to reconsider the unused `atomic.apply` pass-through wrapper.",
+    "findings": []
+  },
+  {
+    "arm": "clean",
+    "repetition": 2,
+    "run_id": "3fc5b26b-de69-4e4e-a3d4-57bfc7bae785",
+    "operation_id": "b0bdc151-2fa8-4e3a-8cde-c4543c5aab14",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "17b4907f2f42490c77d791a98ca3afc9754d5cd9"
+    },
+    "branch": "eval/v6-clean-r2",
+    "started_at": "2026-11-05T17:32:18.022356+00:00",
+    "finished_at": "2026-11-05T17:33:21.271107+00:00",
+    "raw_result_sha256": "f1b7a98f63f8cf42f7a75df6c8af2e0dbeaee4b69710c0804df5ec9f91012fdd",
+    "review_comment": "Nothing to comment.",
+    "findings": []
+  },
+  {
+    "arm": "clean",
+    "repetition": 3,
+    "run_id": "01fe60c1-d658-4d18-b31d-00ebad9e3a24",
+    "operation_id": "357a15fd-a5fa-4dc9-b4a8-29203de1610a",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "17b4907f2f42490c77d791a98ca3afc9754d5cd9"
+    },
+    "branch": "eval/v6-clean-r3",
+    "started_at": "2026-11-05T17:32:05.335964+00:00",
+    "finished_at": "2026-11-05T17:32:52.014501+00:00",
+    "raw_result_sha256": "3dd5a8e900a1c205d94769458cf5988cd2ddd0f62118e978f8fc3f04e98c8dca",
+    "review_comment": "Nothing to comment.",
+    "findings": []
+  },
+  {
+    "arm": "holdout-clean",
+    "repetition": 1,
+    "run_id": "45736d78-dca0-467b-9318-249c73682dbf",
+    "operation_id": "732923b2-c0fb-4fb8-955d-ed9506015547",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "d56c3380fa82ed84d45231237f0747d0ab5097d9"
+    },
+    "branch": "eval/v6-holdout-clean-r1",
+    "started_at": "2026-11-05T17:33:32.240716+00:00",
+    "finished_at": "2026-11-05T17:34:27.208214+00:00",
+    "raw_result_sha256": "590ab6166f994d2f61cb7c8903dfc4fbc55cae80d94812d843a49fa242e08468",
+    "review_comment": "Consider documenting `purge_permanently`’s error contract if callers need to distinguish an unknown ID from a protected one.",
+    "findings": []
+  },
+  {
+    "arm": "holdout-clean",
+    "repetition": 2,
+    "run_id": "4ced10e8-b3e5-43c1-9a42-c0e45b23c2ca",
+    "operation_id": "d22bcda6-d2fd-4248-80c1-0f385fb629df",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "d56c3380fa82ed84d45231237f0747d0ab5097d9"
+    },
+    "branch": "eval/v6-holdout-clean-r2",
+    "started_at": "2026-11-05T17:33:56.851737+00:00",
+    "finished_at": "2026-11-05T17:34:34.387747+00:00",
+    "raw_result_sha256": "67197c8223a935eb19dd10d875136cc9252338f3e6e115f267ac287a38de08bd",
+    "review_comment": "Consider having `account_key` call `normalize_account` or making it an alias, so the two cannot drift apart if normalization changes.",
+    "findings": []
+  },
+  {
+    "arm": "holdout-clean",
+    "repetition": 3,
+    "run_id": "2b820608-f3df-4cc7-9eb4-8be438ed56b8",
+    "operation_id": "bc03f7ef-5015-445d-92b4-d9a531e8a22c",
+    "complete": true,
+    "analysis_mode": "full",
+    "skill_sha256": "705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae",
+    "skill_consulted": true,
+    "skills_component_completed": true,
+    "snapshot": {
+      "base_sha": "8f59c3879222e2a44e7595e083c6b9ee81c4f501",
+      "tree_sha": "d56c3380fa82ed84d45231237f0747d0ab5097d9"
+    },
+    "branch": "eval/v6-holdout-clean-r3",
+    "started_at": "2026-11-05T17:34:08.912576+00:00",
+    "finished_at": "2026-11-05T17:34:51.172018+00:00",
+    "raw_result_sha256": "c707108b465f4ece50e037959b3c5b15be42eb3ecd3f052ea89c0f99fe557cfe",
+    "review_comment": "Nothing to comment.",
+    "findings": []
+  }
+]
