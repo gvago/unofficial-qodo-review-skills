@@ -1,0 +1,254 @@
+diff --git a/docs/alternatives.md b/docs/alternatives.md
+new file mode 100644
+index 0000000..62ed23d
+--- /dev/null
++++ b/docs/alternatives.md
+@@ -0,0 +1,7 @@
++# Alternative operations
++purge_permanently is an explicitly irreversible operation. It is not archive.
++scoped_cleanup operates on disposable build artifacts (ArtifactStore), not protected resources. It delegates name and environment selection to ArtifactStore.delete_named.
++Resources.remove_if_unprotected performs the protection check and deletion under the same lock used for protection updates.
++account_key is a standalone equivalent of normalize_account; it preserves stripping and Unicode case folding.
++save_at accepts an absolute deadline, not a duration.
++retry_after_failure is synchronous and deliberately delays one retry through an injected clock.
+diff --git a/docs/cache.md b/docs/cache.md
+index cf60538..e59bb78 100644
+--- a/docs/cache.md
++++ b/docs/cache.md
+@@ -1,2 +1,2 @@
+ # Cache lifetime
+-The default cache lifetime is 60 seconds.
++The default cache lifetime is 300 seconds.
+diff --git a/docs/history/v1.md b/docs/history/v1.md
+new file mode 100644
+index 0000000..f0721ac
+--- /dev/null
++++ b/docs/history/v1.md
+@@ -0,0 +1,2 @@
++# Historical behavior: version 1 only
++Version 1 defaulted to 30 seconds and retried every status. This is historical migration information, not a promise about the current implementation.
+diff --git a/docs/snapshots.md b/docs/snapshots.md
+index cf2b818..e2c5ea4 100644
+--- a/docs/snapshots.md
++++ b/docs/snapshots.md
+@@ -1,4 +1,4 @@
+ # Snapshot retention
+ Detaching one owner removes only that owner's reference. A snapshot with remaining owners must not be destroyed.
+ Enabled settings use parse_enabled; the string 'false' is false, not truthy.
+-A configured schedule permits backups on weekdays; weekends remain excluded.
++Backups run only when a schedule exists and today is a weekday.
+diff --git a/tests/test_artifact_scope.py b/tests/test_artifact_scope.py
+new file mode 100644
+index 0000000..1c966d8
+--- /dev/null
++++ b/tests/test_artifact_scope.py
+@@ -0,0 +1,10 @@
++import unittest
++from workspace.scoped_records import Artifact, ArtifactStore
++from workspace.alternatives import scoped_cleanup
++
++
++class ArtifactTests(unittest.TestCase):
++    def test_cleanup_preserves_other_environment(self):
++        store = ArtifactStore({'d': Artifact('same', 'dev'), 'p': Artifact('same', 'prod')})
++        scoped_cleanup(store, 'same', 'dev')
++        self.assertEqual(store.rows, {'p': Artifact('same', 'prod')})
+diff --git a/tests/test_deposit.py b/tests/test_deposit.py
+index 5920921..2113718 100644
+--- a/tests/test_deposit.py
++++ b/tests/test_deposit.py
+@@ -4,5 +4,5 @@ from workspace.common import credit
+ 
+ class DepositTests(unittest.TestCase):
+     def test_deposit(self):
+-        result = credit(10, 5)
++        result = credit(balance=10, amount=5)
+         self.assertEqual(result, 15)
+diff --git a/tests/test_purge_contract.py b/tests/test_purge_contract.py
+new file mode 100644
+index 0000000..417a150
+--- /dev/null
++++ b/tests/test_purge_contract.py
+@@ -0,0 +1,18 @@
++import unittest
++from workspace.atomic import Resources
++from workspace.alternatives import purge_permanently
++
++
++class PurgeTests(unittest.TestCase):
++    def test_protected_resource_is_retained(self):
++        store = Resources()
++        store.rows['r'] = {'protected': True}
++        with self.assertRaises(ValueError):
++            purge_permanently(store, 'r')
++        self.assertIn('r', store.rows)
++
++    def test_unprotected_resource_is_permanently_deleted(self):
++        store = Resources()
++        store.rows['r'] = {'protected': False}
++        purge_permanently(store, 'r')
++        self.assertNotIn('r', store.rows)
+diff --git a/tests/test_retry.py b/tests/test_retry.py
+new file mode 100644
+index 0000000..2baf8b6
+--- /dev/null
++++ b/tests/test_retry.py
+@@ -0,0 +1,27 @@
++import unittest
++from unittest.mock import Mock
++from workspace.alternatives import retry_after_failure
++
++
++class Clock:
++    def __init__(self):
++        self.elapsed = 0
++
++    def sleep(self, seconds):
++        self.elapsed += seconds
++
++
++class RetryTests(unittest.TestCase):
++    def test_fake_clock_backoff(self):
++        clock = Clock()
++        attempts = []
++        def attempt():
++            attempts.append(clock.elapsed)
++            if len(attempts) == 1:
++                raise ConnectionError()
++            return 7
++        operation = Mock(side_effect=attempt)
++        self.assertEqual(retry_after_failure(operation, clock), 7)
++        self.assertEqual(attempts, [0, 1])
++        self.assertEqual(clock.elapsed, 1)
++        self.assertEqual(operation.call_count, 2)
+diff --git a/tests/test_session_defaults.py b/tests/test_session_defaults.py
+new file mode 100644
+index 0000000..76cc332
+--- /dev/null
++++ b/tests/test_session_defaults.py
+@@ -0,0 +1,14 @@
++import unittest
++from unittest.mock import patch
++from workspace.sessions import save_session
++from workspace.common import cache_get
++
++
++class SessionDefaultsTests(unittest.TestCase):
++    def test_omitted_duration_uses_documented_default(self):
++        cache = {}
++        with patch('time.time', return_value=1000):
++            save_session(cache, 'session', 'payload')
++        self.assertEqual(cache['session'], ('payload', 1300))
++        self.assertEqual(cache_get(cache, 'session', 1299), 'payload')
++        self.assertIsNone(cache_get(cache, 'session', 1300))
+diff --git a/workspace/alternatives.py b/workspace/alternatives.py
+new file mode 100644
+index 0000000..b944f73
+--- /dev/null
++++ b/workspace/alternatives.py
+@@ -0,0 +1,29 @@
++from workspace.common import cache_put
++from workspace.atomic import Resources
++from workspace.scoped_records import ArtifactStore
++
++
++def purge_permanently(store: Resources, resource_id):
++    """Explicit permanent purge; unlike archive, restoration is not supported."""
++    if not store.remove_if_unprotected(resource_id):
++        raise ValueError('protected')
++
++
++def scoped_cleanup(store: ArtifactStore, name, environment):
++    store.delete_named(name, environment)
++
++
++def account_key(value):
++    return value.strip().casefold()
++
++
++def save_at(cache, key, value, deadline):
++    cache_put(cache, key, value, expires_at=deadline)
++
++
++def retry_after_failure(operation, clock):
++    try:
++        return operation()
++    except ConnectionError:
++        clock.sleep(1)
++        return operation()
+diff --git a/workspace/atomic.py b/workspace/atomic.py
+new file mode 100644
+index 0000000..3eafd0e
+--- /dev/null
++++ b/workspace/atomic.py
+@@ -0,0 +1,22 @@
++from threading import Lock
++
++
++class Resources:
++    def __init__(self):
++        self.rows = {}
++        self.lock = Lock()
++
++    def set_protected(self, key, value):
++        with self.lock:
++            self.rows[key]['protected'] = value
++
++    def remove_if_unprotected(self, key):
++        with self.lock:
++            if self.rows[key]['protected']:
++                return False
++            del self.rows[key]
++            return True
++
++
++def apply(resources, planned_key):
++    return resources.remove_if_unprotected(planned_key)
+diff --git a/workspace/policy.py b/workspace/policy.py
+index 144ab77..b2a802e 100644
+--- a/workspace/policy.py
++++ b/workspace/policy.py
+@@ -1,4 +1,4 @@
+-DEFAULT_TTL = 60
++DEFAULT_TTL = 300
+ 
+ 
+ def should_retry(status, enabled):
+diff --git a/workspace/scoped_records.py b/workspace/scoped_records.py
+new file mode 100644
+index 0000000..b1a98ff
+--- /dev/null
++++ b/workspace/scoped_records.py
+@@ -0,0 +1,17 @@
++from dataclasses import dataclass
++
++
++@dataclass(frozen=True)
++class Artifact:
++    name: str
++    environment: str
++
++
++class ArtifactStore:
++    def __init__(self, rows):
++        self.rows = rows
++
++    def delete_named(self, name, environment):
++        for key, artifact in list(self.rows.items()):
++            if artifact.name == name and artifact.environment == environment:
++                del self.rows[key]
+diff --git a/workspace/sessions.py b/workspace/sessions.py
+index e4fb47b..45066cf 100644
+--- a/workspace/sessions.py
++++ b/workspace/sessions.py
+@@ -1,6 +1,9 @@
+ import time
+ from workspace.common import cache_put
++from workspace import policy
+ 
+ 
+-def save_session(cache, key, value, ttl_seconds):
++def save_session(cache, key, value, ttl_seconds=None):
++    if ttl_seconds is None:
++        ttl_seconds = policy.DEFAULT_TTL
+     cache_put(cache, key, value, expires_at=time.time() + ttl_seconds)
