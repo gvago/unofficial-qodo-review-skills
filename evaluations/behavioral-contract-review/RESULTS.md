@@ -1,111 +1,65 @@
-# Behavioral contract review: measured evaluation
+# Behavioral contract review: evaluation
 
-**Local fixture gate: PASS.** This result is limited to the frozen synthetic inputs
-below. It is not a claim of perfect reviews, statistical superiority, or compatibility
-with every deployment.
+The skill was evaluated on synthetic Python fixtures covering lifecycle safety,
+shared helper/API semantics, test effectiveness, and prose/code consistency.
 
-## Measured result
+## Results
 
-| Arm | Independent executions | Result per execution |
+| Arm | Executions | Result per execution |
 | --- | ---: | --- |
 | No-skill primary baseline | 1 | 12 of 13 seeded defects detected |
-| Skill-enabled primary cases | 3 | 13 of 13 detected in each execution |
-| Skill-enabled transfer cases | 3 | 4 of 4 detected in each execution |
-| Corrected primary clean controls | 3 | 0 structured findings in each execution |
-| Corrected transfer clean controls | 3 | 0 structured findings in each execution |
+| Skill-enabled primary cases | 3 | 13 of 13 detected |
+| Skill-enabled transfer cases | 3 | 4 of 4 detected |
+| Primary clean controls | 3 | 0 structured findings |
+| Transfer clean controls | 3 | 0 structured findings |
 
-All 17 distinct defect cases were detected in each of their three treatment
-repetitions. Fifty of the 51 treatment/transfer detections contain an explicit
-`behavioral-contract-review` skill citation. The remaining protection/apply finding
-is correct but has no skill citation in primary repetition 1; that same case is
-skill-cited in repetitions 2 and 3. Attribution is therefore established for every
-case across its trials, **not for every individual detection**. A citation is evidence
-of skill-grounded output, not proof of a counterfactual discovery cause.
+All 17 distinct cases were detected in each of their three repetitions. Actual
+skill citations accompany 50 of 51 positive detections and cover every distinct
+case across its repetitions. Three clean reviews also returned optional commentary.
 
-The single baseline missed the changed default versus current documentation case.
-That is an observed difference on this fixture, not an estimated uplift or evidence
-that the other 16 mechanisms require the skill. The baseline was not repeated or
-run on the transfer and clean arms, so those arms cannot support comparative claims.
+The baseline was run once on the primary cases only. It missed the changed-default
+versus documentation case. This is a scoped observation, not a general improvement
+estimate or a comparison for the transfer and clean populations.
 
-Three clean reviews also supplied optional prose commentary. Zero structured findings
-must not be described as zero commentary or zero noise.
+## Reproducible evidence
 
-## Execution evidence
+- Synthetic baseline: [`8f59c3879222e2a44e7595e083c6b9ee81c4f501`](https://github.com/gvago/behavioral-contract-review-eval/tree/8f59c3879222e2a44e7595e083c6b9ee81c4f501).
+- Lens SHA-256: `705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae`.
+- Local reviews used Qodo CLI `2.1.0`, full analysis and deep effort.
+- Thirteen distinct executions used isolated branches. Returned Git trees were
+  matched to reconstructed inputs and submitted skill bytes.
 
-- Synthetic source baseline:
-  [`8f59c3879222e2a44e7595e083c6b9ee81c4f501`](https://github.com/gvago/behavioral-contract-review-eval/tree/8f59c3879222e2a44e7595e083c6b9ee81c4f501).
-- Frozen lens SHA-256:
-  `705a77592dda51e5963de344ca5fbb1fa26db3d58e4d280225391a34557f7aae`.
-- Qodo CLI version: `2.1.0`. Real full/deep local reviews, not direct prompt simulations.
-- Thirteen distinct returned execution IDs, checkpoints, operation IDs and isolated
-  branches. Returned Git tree IDs match independently reconstructed worktree trees.
-  Submitted skill bytes match the frozen lens; no-skill control contains no lens.
-- Results match the saved CLI collection outputs. Review/finding coverage is complete,
-  no files were reported skipped, and treatment/clean executions report the actual
-  skills component completed. Positive citations provide the skill-specific evidence;
-  component completion alone is not a file-read trace.
+[Inputs](inputs.json) record file and patch hashes; [receipts](receipts.json) retain
+finding text, citations and adjudications; [provenance](provenance.json) records the
+input checks. The scorer checks saved evidence consistency and is complemented by
+source-snapshot validation.
 
-See [receipts.json](receipts.json) for original finding text, citations and explicit
-adjudications; [provenance.json](provenance.json) for source/input checks; and
-[inputs.json](inputs.json) for frozen input hashes. Raw collection outputs are retained
-by the maintainer. The public exports omit workspace credentials and internal routing
-metadata. These are checked saved artifacts, not signed service attestations.
+Executable probes reproduce the code/test defects and pass their safe counterparts.
+The clean controls include protected-resource preservation, legitimate permanent
+deletion, downstream environment scoping, fake-clock retry ordering, and default
+expiration boundaries. Mutation checks confirm that clean assertions reject wrong
+arithmetic and omitted notifications. The scorer/provenance regression suite has
+30 passing tests.
 
-The scorer is an **adjudicated-receipt consistency gate**. It checks repeated detection,
-clean findings, case/location mappings and actual skill citations; it does not contact
-the service or prove that someone could not edit a saved artifact. The separate
-provenance checks bind the selected results to the submitted source snapshots.
+For the first normalization finding, credit is based on its valid whitespace
+counterexample, not its secondary Unicode illustration. Original finding text and
+adjudication remain available in the receipts.
 
-## Semantic and executable checks
+## Native steering example
 
-The primary suite covers three lifecycle defects, two repository helper/API defects,
-three ineffective-test defects, and five code/prose consistency defects. Transfer cases
-use shared ownership, textual boolean parsing, a mock assertion against an application
-caller, and a prose scheduling qualifier. These are mechanism-transfer cases, not
-independently sampled production incidents.
+The [Git-PR example](https://github.com/gvago/behavioral-contract-review-eval/pull/1)
+verifies an active imported skill in steering mode with legacy discovery disabled.
+It contains 12 fresh skill-cited findings and one carried finding, which is excluded
+from fresh-discovery counts. This is adoption evidence, not another independent
+repetition of the local evaluation.
 
-Executable probes demonstrate the nine primary code/test failures and three transfer
-code/test failures, then pass on their corrected counterparts. Test mutations verify
-that broken arithmetic and an omitted notification are rejected by the clean tests
-but accepted by the weakened tests. Documentation evidence records the implementation's
-default, retry predicate, operation ordering, permission-error propagation and weekday
-condition; prose contradictions were separately source-adjudicated.
+[Release notes and native evidence](https://github.com/gvago/unofficial-qodo-review-skills/releases/tag/behavioral-contract-review-v1.0.0)
+provide setup instructions and the structured Git-PR result.
 
-The final primary clean fixture's nine executable tests pass, including protected
-resource preservation, legitimate permanent deletion, downstream environment scoping,
-fake-clock retry ordering and default expiration boundaries. The same safe lookalikes
-are included in the transfer-clean patch. The scorer/provenance tests validate the
-evidence checks themselves; they are not model-quality measurements.
+## Tested scope
 
-### Explanatory error retained
-
-Primary repetition 1's normalization finding correctly reports whitespace trimming
-loss, but its secondary `STRASSE` versus normalized `straße` illustration is not a
-failing input for the supplied helper. That example is an explanatory error and gets
-no separate credit. The finding text is preserved, with this caveat in its adjudication.
-The other two repetitions supply valid Unicode counterexamples. Detection success
-must not be described as every sentence being correct.
-
-## Development history and scope
-
-Earlier development runs were not counted as release repetitions. They exposed an
-addition-only baseline, a mock-only test, a missing expiration consumer, incomplete
-clean-test oracles, a default change without a consumer, and permanent-purge controls
-that violated protection invariants. Those fixtures were corrected rather than their
-findings being ignored. Final primary/transfer positive inputs are from the frozen
-third fixture revision; clean inputs are from the sixth revision. They use the same
-baseline and identical lens bytes. Fresh run identities prevent carried findings from
-being counted as independent detections.
-
-The contract-rich source documentation is legitimate reviewer input, but makes this
-a favorable synthetic evaluation. It does not establish discovery of undocumented
-business invariants, effectiveness on unrelated languages or repositories, or behavior
-in the recipient's deployed version. It also does not validate a docs-only review when
-review effort skips that change.
-
-## Adoption status
-
-This evaluation proves the **local skill-discovery path** exercised by the frozen
-baseline configuration. Portal ingestion, active steering configuration and Git-PR
-publication are separate acceptance checks. Do not present them as verified from the
-local results alone. See the release/PR evidence for those checks when available.
+The fixtures provide explicit repository contracts. These measurements do not
+establish discovery of undocumented invariants or equivalent coverage on unrelated
+repositories and languages. Review-effort and exclusion settings still apply.
+Validate against previously missed PRs in the target deployment before relying on
+the same coverage.
